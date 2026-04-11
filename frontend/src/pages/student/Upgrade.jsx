@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { Star, Check, CreditCard, Shield, Download, X, Zap, Mic, Eye } from 'lucide-react';
+import { Star, CreditCard, Shield, Download, Smartphone } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Modal } from '../../components/shared/UI';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 
+// ── Receipt Slip ────────────────────────────────────────────────────────────
 function ReceiptSlip({ slip, onClose }) {
   const printSlip = () => {
     const w = window.open('', '_blank');
-    w.document.write(`<html><head><title>HireLoop Receipt</title><style>body{font-family:-apple-system,sans-serif;max-width:420px;margin:40px auto;padding:24px;color:#1d1d1f}.logo{text-align:center;font-size:20px;font-weight:700;margin-bottom:4px}.sub{text-align:center;font-size:12px;color:#6e6e73;margin-bottom:24px}hr{border:none;border-top:1px dashed #d2d2d7;margin:20px 0}.amount{text-align:center;font-size:36px;font-weight:700;margin:16px 0}.row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px}.label{color:#6e6e73}.stamp{text-align:center;background:#e6f9ed;color:#1a7f37;padding:10px;border-radius:8px;font-weight:600;margin-top:20px}</style></head><body><div class="logo">🔗 HireLoop</div><div class="sub">Official Payment Receipt</div><hr><div class="amount">${slip.amount}</div><hr>${[['Receipt ID', slip.receiptId], ['Date', new Date(slip.date).toLocaleString()], ['Email', slip.userEmail], ['Description', slip.description], ['Currency', slip.currency], ['Status', slip.status]].map(([l, v]) => `<div class="row"><span class="label">${l}</span><span>${v}</span></div>`).join('')}<hr><div class="stamp">✓ PAYMENT CONFIRMED${slip.isDemo ? ' (DEMO)' : ''}</div></body></html>`);
+    w.document.write(`<html><head><title>HireLoop Receipt</title><style>body{font-family:-apple-system,sans-serif;max-width:420px;margin:40px auto;padding:24px;color:#1d1d1f}.logo{text-align:center;font-size:20px;font-weight:700;margin-bottom:4px}.sub{text-align:center;font-size:12px;color:#6e6e73;margin-bottom:24px}hr{border:none;border-top:1px dashed #d2d2d7;margin:20px 0}.amount{text-align:center;font-size:36px;font-weight:700;margin:16px 0}.row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px}.label{color:#6e6e73}.stamp{text-align:center;background:#e6f9ed;color:#1a7f37;padding:10px;border-radius:8px;font-weight:600;margin-top:20px}</style></head><body><div class="logo">🔗 HireLoop</div><div class="sub">Official Payment Receipt</div><hr><div class="amount">${slip.amount}</div><hr>${[['Receipt ID',slip.receiptId],['Date',new Date(slip.date).toLocaleString()],['Email',slip.userEmail],['Description',slip.description],['Gateway',slip.gateway],['Currency',slip.currency],['Status',slip.status]].map(([l,v])=>`<div class="row"><span class="label">${l}</span><span>${v}</span></div>`).join('')}<hr><div class="stamp">✓ PAYMENT CONFIRMED${slip.isDemo?' (DEMO)':''}</div></body></html>`);
     w.document.close(); w.print();
   };
 
@@ -23,25 +23,22 @@ function ReceiptSlip({ slip, onClose }) {
       <div className="receipt-card">
         <div className="receipt-logo">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <div style={{ width: 28, height: 28, background: 'var(--text-1)', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </div>
-            <span style={{ fontWeight: 700, fontSize: 15 }}>HireLoop</span>
+            <span style={{ fontWeight: 700, fontSize: 15 }}>🔗 HireLoop</span>
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>Official Payment Receipt</div>
         </div>
 
         <div className="receipt-amount">{slip.amount}</div>
         <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-2)', marginBottom: 8 }}>{slip.description}</div>
-
         <hr className="receipt-divider" />
 
         {[
           ['Receipt ID', slip.receiptId],
           ['Date', new Date(slip.date).toLocaleString('en-IN')],
           ['Email', slip.userEmail],
+          ['Gateway', slip.gateway],
           ['Currency', slip.currency],
-          ['Payment ID', slip.paymentIntentId ? slip.paymentIntentId.slice(0, 20) + '…' : '—'],
+          ['Payment ID', slip.paymentIntentId ? slip.paymentIntentId.slice(0, 22) + '…' : '—'],
           ['Status', slip.status],
         ].map(([l, v]) => (
           <div className="receipt-row" key={l}>
@@ -64,46 +61,105 @@ function ReceiptSlip({ slip, onClose }) {
   );
 }
 
-const PLANS = {
-  premium_student: {
-    name: 'Premium Student',
-    price: '$4.99',
-    period: '/year',
-    desc: 'Everything you need to land your dream job',
-    features: ['Unlimited AI mock interviews', 'Unlimited resume analyses', 'Priority visibility to recruiters', 'AI cover letter generator', 'Advanced job recommendations', 'Interview performance reports'],
-    highlight: true,
-    badge: 'Best Value',
-  },
-};
-
+// ── Main Upgrade Page ───────────────────────────────────────────────────────
 export default function Upgrade() {
   const { profile, refresh } = useAuth();
   const [loading, setLoading] = useState(false);
   const [slip, setSlip] = useState(null);
-  const [showReceipt, setShowReceipt] = useState(false);
-  const [cardDetails, setCardDetails] = useState({ number: '', expiry: '', cvv: '', name: '' });
-  const [showCheckout, setShowCheckout] = useState(false);
+  const [step, setStep] = useState('plan'); // plan | stripe | razorpay | success
   const [paymentDbId, setPaymentDbId] = useState('');
-  const [step, setStep] = useState('plan'); // plan | checkout | success
+  const [cardDetails, setCardDetails] = useState({ number: '', expiry: '', cvv: '', name: '' });
 
-  const openCheckout = async () => {
+  const fmtCard = v => v.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim().slice(0, 19);
+  const fmtExpiry = v => v.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2').slice(0, 5);
+
+  // ── Open Stripe checkout ──
+  const openStripe = async () => {
     setLoading(true);
     try {
       const d = await api.post('/payments/create-intent', { type: 'premium_student' });
       setPaymentDbId(d.paymentDbId);
-      setStep('checkout');
+      setStep('stripe');
     } catch (e) { toast.error(e.error || 'Failed to initialize payment'); }
     finally { setLoading(false); }
   };
 
-  const processPayment = async () => {
+  // ── Open Razorpay checkout ──
+  const openRazorpay = async () => {
+    setLoading(true);
+    try {
+      const d = await api.post('/payments/create-razorpay-order', { type: 'premium_student' });
+      setPaymentDbId(d.paymentDbId);
+
+      if (d.demo) {
+        // Demo mode — simulate Razorpay
+        const res = await api.post('/payments/demo-success', {
+          paymentDbId: d.paymentDbId,
+          type: 'premium_student',
+          gateway: 'razorpay',
+        });
+        setSlip(res.slip);
+        setStep('success');
+        await refresh();
+        toast.success('🎉 Premium activated!');
+        return;
+      }
+
+      // Real Razorpay checkout
+      const options = {
+        key: d.keyId,
+        amount: d.amount,
+        currency: d.currency,
+        name: 'HireLoop',
+        description: 'Premium Student — 1 Year',
+        order_id: d.orderId,
+        handler: async (response) => {
+          try {
+            const confirm = await api.post('/payments/confirm-razorpay', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              paymentDbId: d.paymentDbId,
+              type: 'premium_student',
+            });
+            setSlip(confirm.slip);
+            setStep('success');
+            await refresh();
+            toast.success('🎉 Premium activated!');
+          } catch (e) { toast.error('Payment verification failed'); }
+        },
+        prefill: { email: profile?.email || '' },
+        theme: { color: '#6366f1' },
+        modal: { ondismiss: () => toast('Payment cancelled') },
+      };
+
+      // Load Razorpay SDK dynamically
+      if (!window.Razorpay) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          s.onload = resolve;
+          s.onerror = reject;
+          document.body.appendChild(s);
+        });
+      }
+      new window.Razorpay(options).open();
+    } catch (e) { toast.error(e.error || 'Failed to initialize Razorpay'); }
+    finally { setLoading(false); }
+  };
+
+  // ── Process Stripe card ──
+  const processStripe = async () => {
     if (!cardDetails.number || !cardDetails.expiry || !cardDetails.cvv || !cardDetails.name) {
       toast.error('Please fill all card details'); return;
     }
     setLoading(true);
     try {
-      // Use demo-success endpoint (no real Stripe card processing in demo)
-      const d = await api.post('/payments/demo-success', { paymentDbId, type: 'premium_student' });
+      const d = await api.post('/payments/demo-success', {
+        paymentDbId,
+        type: 'premium_student',
+        gateway: 'stripe',
+      });
       setSlip(d.slip);
       setStep('success');
       await refresh();
@@ -112,9 +168,7 @@ export default function Upgrade() {
     finally { setLoading(false); }
   };
 
-  const fmtCard = v => v.replace(/\D/g,'').replace(/(.{4})/g,'$1 ').trim().slice(0,19);
-  const fmtExpiry = v => v.replace(/\D/g,'').replace(/(\d{2})(\d)/,'$1/$2').slice(0,5);
-
+  // ── Already premium ──
   if (profile?.is_premium) return (
     <div style={{ maxWidth: 520, margin: '0 auto', paddingTop: 40 }}>
       <div className="card card-p" style={{ textAlign: 'center' }}>
@@ -126,19 +180,14 @@ export default function Upgrade() {
             Active until {new Date(profile.premium_expires_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
           </div>
         )}
-        <div className="grid-2" style={{ marginTop: 20 }}>
-          {[['Unlimited AI Interviews', '🎤'], ['Unlimited Resume Scans', '🧠'], ['Priority Visibility', '👁'], ['Cover Letter AI', '📝']].map(([l, i]) => (
-            <div key={l} style={{ display: 'flex', gap: 10, alignItems: 'center', fontSize: 14, padding: '8px 0', borderBottom: '1px solid var(--border-light)' }}>
-              <span>{i}</span>{l}
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
 
   return (
     <div style={{ maxWidth: 680, margin: '0 auto' }}>
+
+      {/* ── Step: Plan ── */}
       {step === 'plan' && (
         <>
           <div style={{ textAlign: 'center', marginBottom: 36 }}>
@@ -146,9 +195,8 @@ export default function Upgrade() {
             <p className="page-sub">Unlock the full power of HireLoop AI</p>
           </div>
 
-          {/* Free vs Premium comparison */}
+          {/* Free vs Premium */}
           <div className="grid-2" style={{ marginBottom: 28, gap: 16 }}>
-            {/* Free */}
             <div className="card card-p" style={{ opacity: .85 }}>
               <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>Free</div>
               <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 16 }}>$0</div>
@@ -166,16 +214,16 @@ export default function Upgrade() {
               ))}
             </div>
 
-            {/* Premium */}
-            <div className="payment-plan-card selected" style={{ border: '2px solid var(--accent)' }}>
+            <div className="payment-plan-card selected" style={{ border: '2px solid var(--accent)', position: 'relative' }}>
               <div style={{ position: 'absolute', top: 12, right: 12 }}>
                 <span className="badge badge-blue">⭐ Best Value</span>
               </div>
               <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4, color: 'var(--accent)' }}>Premium</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 4 }}>
                 <span style={{ fontSize: 32, fontWeight: 700 }}>$4.99</span>
                 <span style={{ fontSize: 14, color: 'var(--text-2)' }}>/year</span>
               </div>
+              <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 16 }}>≈ ₹415 / year</div>
               {[
                 'Unlimited AI mock interviews',
                 'Unlimited resume analyses',
@@ -184,23 +232,36 @@ export default function Upgrade() {
                 'Advanced job matching',
                 'Detailed performance reports',
               ].map(feat => (
-                <div key={feat} style={{ display: 'flex', gap: 8, fontSize: 13, marginBottom: 8, color: 'var(--text-1)' }}>
+                <div key={feat} style={{ display: 'flex', gap: 8, fontSize: 13, marginBottom: 8 }}>
                   <span style={{ color: 'var(--green)' }}>✓</span>{feat}
                 </div>
               ))}
-              <button className="btn btn-primary btn-full" style={{ marginTop: 16 }} onClick={openCheckout} disabled={loading}>
-                {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#fff' }} /> Processing…</> : <><Star size={15} /> Get Premium — $4.99/yr</>}
-              </button>
+
+              {/* Payment buttons */}
+              <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <button className="btn btn-primary btn-full" onClick={openStripe} disabled={loading}>
+                  <CreditCard size={15} /> Pay with Card (Stripe) — $4.99
+                </button>
+                <button
+                  className="btn btn-full"
+                  style={{ background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: 'var(--r-md)', padding: '10px 16px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                  onClick={openRazorpay}
+                  disabled={loading}
+                >
+                  <Smartphone size={15} /> Pay with UPI / Card (Razorpay) — ₹415
+                </button>
+              </div>
             </div>
           </div>
 
           <div className="alert alert-info" style={{ fontSize: 13 }}>
-            🔒 <strong>Secure demo checkout.</strong> This is a demo environment — no real charges will be made. For production, connect your Stripe keys in <code>.env</code>.
+            🔒 <strong>Secure checkout.</strong> Choose Stripe for international cards or Razorpay for UPI, Indian cards & netbanking.
           </div>
         </>
       )}
 
-      {step === 'checkout' && (
+      {/* ── Step: Stripe Card Form ── */}
+      {step === 'stripe' && (
         <div style={{ maxWidth: 440, margin: '0 auto' }}>
           <div style={{ marginBottom: 24 }}>
             <button className="btn btn-ghost btn-sm" onClick={() => setStep('plan')}>← Back</button>
@@ -213,7 +274,6 @@ export default function Upgrade() {
               </div>
               <div style={{ fontWeight: 700, fontSize: 22 }}>$4.99</div>
             </div>
-
             <hr className="divider" />
 
             <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -222,7 +282,7 @@ export default function Upgrade() {
 
             <div className="form-group">
               <label className="label">Cardholder Name</label>
-              <input className="input" placeholder="Soumya Kumar" value={cardDetails.name} onChange={e => setCardDetails(d => ({ ...d, name: e.target.value }))} />
+              <input className="input" placeholder="Your Name" value={cardDetails.name} onChange={e => setCardDetails(d => ({ ...d, name: e.target.value }))} />
             </div>
             <div className="form-group">
               <label className="label">Card Number</label>
@@ -243,7 +303,7 @@ export default function Upgrade() {
                 <label className="label">CVV</label>
                 <input className="input" placeholder="123"
                   value={cardDetails.cvv}
-                  onChange={e => setCardDetails(d => ({ ...d, cvv: e.target.value.replace(/\D/g,'').slice(0,3) }))}
+                  onChange={e => setCardDetails(d => ({ ...d, cvv: e.target.value.replace(/\D/g, '').slice(0, 3) }))}
                   maxLength={3} />
               </div>
             </div>
@@ -252,17 +312,20 @@ export default function Upgrade() {
               🧪 <strong>Demo mode:</strong> Use any card details. Test card: <code>4242 4242 4242 4242</code>, expiry 12/28, CVV 123
             </div>
 
-            <button className="btn btn-primary btn-full btn-lg" onClick={processPayment} disabled={loading}>
-              {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#fff' }} /> Processing payment…</> : <><Shield size={15} /> Pay $4.99 — Activate Premium</>}
+            <button className="btn btn-primary btn-full btn-lg" onClick={processStripe} disabled={loading}>
+              {loading
+                ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#fff' }} /> Processing…</>
+                : <><Shield size={15} /> Pay $4.99 — Activate Premium</>}
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, fontSize: 12, color: 'var(--text-3)' }}>
-              <Shield size={12} /> Secured · Demo environment
+              <Shield size={12} /> Secured by Stripe
             </div>
           </div>
         </div>
       )}
 
+      {/* ── Step: Success ── */}
       {step === 'success' && slip && (
         <div style={{ maxWidth: 480, margin: '0 auto' }}>
           <ReceiptSlip slip={slip} onClose={() => setStep('plan')} />
