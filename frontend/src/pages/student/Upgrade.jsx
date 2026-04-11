@@ -121,24 +121,12 @@ export default function Upgrade() {
         prefill: { email: profile?.email || '' },
         theme: { color: '#6366f1' },
         modal: { ondismiss: () => toast('Payment cancelled') },
-        // Enable all Indian payment methods including UPI
         method: {
           upi: true,
           card: true,
           netbanking: true,
           wallet: true,
           emi: false,
-        },
-        config: {
-          display: {
-            blocks: {
-              upi: { name: 'UPI', instruments: [{ method: 'upi' }] },
-              card: { name: 'Cards', instruments: [{ method: 'card' }] },
-              netbanking: { name: 'Net Banking', instruments: [{ method: 'netbanking' }] },
-            },
-            sequence: ['block.upi', 'block.card', 'block.netbanking'],
-            preferences: { show_default_blocks: false },
-          },
         },
       };
 
