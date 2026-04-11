@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TagInput, Modal } from '../../components/shared/UI';
-import { Shield, CreditCard } from 'lucide-react';
+import { Shield, Smartphone } from 'lucide-react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 
@@ -15,14 +15,23 @@ export default function PostJob() {
     interviewDate: '', slots: 1, requiredSkills: [], eligibleBranches: [],
     eligibleBatches: [2025], requirements: [], responsibilities: [],
   });
-  const [step, setStep] = useState('form'); // form | payment | success
+  const [step, setStep] = useState('form'); // form | success
   const [jobId, setJobId] = useState('');
   const [paymentDbId, setPaymentDbId] = useState('');
   const [loading, setLoading] = useState(false);
-  const [cardDetails, setCardDetails] = useState({ number: '', expiry: '', cvv: '', name: '' });
 
   const set = k => v => setForm(f => ({ ...f, [k]: v }));
   const setE = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const loadRazorpay = () =>
+    new Promise((resolve, reject) => {
+      if (window.Razorpay) return resolve();
+      const s = document.createElement('script');
+      s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      s.onload = resolve;
+      s.onerror = reject;
+      document.body.appendChild(s);
+    });
 
   const createJob = async e => {
     e.preventDefault();
@@ -38,27 +47,49 @@ export default function PostJob() {
       });
       setJobId(job.id);
 
-      // Create payment intent
-      const pmt = await api.post('/payments/create-intent', { type: 'job_listing', jobId: job.id });
+      // Create Razorpay order
+      const pmt = await api.post('/payments/create-razorpay-order', { type: 'job_listing', jobId: job.id });
       setPaymentDbId(pmt.paymentDbId);
-      setStep('payment');
+
+      if (pmt.demo) {
+        await api.post('/payments/demo-success', { paymentDbId: pmt.paymentDbId, type: 'job_listing', jobId: job.id, gateway: 'razorpay' });
+        setStep('success');
+        toast.success('Job posted successfully! 🎉');
+        return;
+      }
+
+      await loadRazorpay();
+
+      const options = {
+        key: pmt.keyId,
+        amount: pmt.amount,
+        currency: pmt.currency,
+        name: 'HireLoop',
+        description: 'Job Listing Fee',
+        order_id: pmt.orderId,
+        handler: async (response) => {
+          try {
+            await api.post('/payments/confirm-razorpay', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              paymentDbId: pmt.paymentDbId,
+              type: 'job_listing',
+              jobId: job.id,
+            });
+            setStep('success');
+            toast.success('Job posted successfully! 🎉');
+          } catch (e) { toast.error('Payment verification failed'); }
+        },
+        theme: { color: '#6366f1' },
+        modal: { ondismiss: () => toast('Payment cancelled') },
+        method: { upi: true, card: true, netbanking: true, wallet: true, emi: false },
+      };
+
+      new window.Razorpay(options).open();
     } catch (e) { toast.error(e.error || 'Failed to create job'); }
     finally { setLoading(false); }
   };
-
-  const pay = async () => {
-    if (!cardDetails.name || !cardDetails.number) { toast.error('Fill card details'); return; }
-    setLoading(true);
-    try {
-      await api.post('/payments/demo-success', { paymentDbId, type: 'job_listing', jobId });
-      setStep('success');
-      toast.success('Job posted and submitted for review! 🎉');
-    } catch (e) { toast.error(e.error || 'Payment failed'); }
-    finally { setLoading(false); }
-  };
-
-  const fmtCard = v => v.replace(/\D/g,'').replace(/(.{4})/g,'$1 ').trim().slice(0,19);
-  const fmtExpiry = v => v.replace(/\D/g,'').replace(/(\d{2})(\d)/,'$1/$2').slice(0,5);
 
   if (step === 'success') return (
     <div style={{ maxWidth: 480, margin: '40px auto', textAlign: 'center' }}>
@@ -74,51 +105,6 @@ export default function PostJob() {
     </div>
   );
 
-  if (step === 'payment') return (
-    <div style={{ maxWidth: 440, margin: '0 auto' }}>
-      <div style={{ marginBottom: 20 }}>
-        <button className="btn btn-ghost btn-sm" onClick={() => setStep('form')}>← Back</button>
-      </div>
-      <div className="card card-p">
-        <h2 style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>Job Listing Fee</h2>
-        <p style={{ color: 'var(--text-2)', fontSize: 13, marginBottom: 20 }}>One-time fee to post and activate your job listing on HireLoop.</p>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--surface-2)', borderRadius: 'var(--r-md)', marginBottom: 20 }}>
-          <div>
-            <div style={{ fontWeight: 600 }}>Job Listing</div>
-            <div style={{ fontSize: 12, color: 'var(--text-2)' }}>Single posting · Pending admin approval</div>
-          </div>
-          <div style={{ fontWeight: 700, fontSize: 20 }}>$9.99</div>
-        </div>
-
-        <label className="label">Cardholder Name</label>
-        <input className="input form-group" placeholder="John Smith" value={cardDetails.name} onChange={e => setCardDetails(d => ({ ...d, name: e.target.value }))} style={{ marginBottom: 12 }} />
-
-        <label className="label">Card Number</label>
-        <input className="input form-group" placeholder="4242 4242 4242 4242"
-          value={cardDetails.number} onChange={e => setCardDetails(d => ({ ...d, number: fmtCard(e.target.value) }))} maxLength={19} style={{ marginBottom: 12 }} />
-
-        <div className="form-row" style={{ marginBottom: 16 }}>
-          <div>
-            <label className="label">Expiry</label>
-            <input className="input" placeholder="MM/YY" value={cardDetails.expiry} onChange={e => setCardDetails(d => ({ ...d, expiry: fmtExpiry(e.target.value) }))} maxLength={5} />
-          </div>
-          <div>
-            <label className="label">CVV</label>
-            <input className="input" placeholder="123" value={cardDetails.cvv} onChange={e => setCardDetails(d => ({ ...d, cvv: e.target.value.replace(/\D/g,'').slice(0,3) }))} maxLength={3} />
-          </div>
-        </div>
-
-        <div className="alert alert-warning" style={{ fontSize: 12, marginBottom: 16 }}>
-          🧪 Demo: Use 4242 4242 4242 4242 / 12/28 / 123
-        </div>
-
-        <button className="btn btn-primary btn-full btn-lg" onClick={pay} disabled={loading}>
-          {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#fff' }} /> Processing…</> : <><Shield size={15} /> Pay $9.99 & Submit Job</>}
-        </button>
-      </div>
-    </div>
-  );
 
   return (
     <div style={{ maxWidth: 680, margin: '0 auto' }}>
@@ -211,7 +197,7 @@ export default function PostJob() {
         </div>
 
         <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
-          {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#fff' }} /> Creating…</> : 'Continue to Payment →'}
+          {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#fff' }} /> Processing…</> : <><Smartphone size={15} /> Continue to Payment (₹8,299) →</>}
         </button>
       </form>
     </div>

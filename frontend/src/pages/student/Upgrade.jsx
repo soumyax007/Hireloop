@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Star, CreditCard, Shield, Download, Smartphone } from 'lucide-react';
+import { Star, Shield, Download, Smartphone } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -52,9 +52,6 @@ function ReceiptSlip({ slip, onClose }) {
 
       <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
         <button className="btn btn-primary flex-1" onClick={printSlip}><Download size={14} /> Download Receipt</button>
-        {slip.stripeReceiptUrl && (
-          <a href={slip.stripeReceiptUrl} target="_blank" rel="noreferrer" className="btn btn-secondary">Stripe Receipt ↗</a>
-        )}
         <button className="btn btn-secondary" onClick={onClose}>Done</button>
       </div>
     </div>
@@ -66,33 +63,25 @@ export default function Upgrade() {
   const { profile, refresh } = useAuth();
   const [loading, setLoading] = useState(false);
   const [slip, setSlip] = useState(null);
-  const [step, setStep] = useState('plan'); // plan | stripe | razorpay | success
-  const [paymentDbId, setPaymentDbId] = useState('');
-  const [cardDetails, setCardDetails] = useState({ number: '', expiry: '', cvv: '', name: '' });
+  const [step, setStep] = useState('plan'); // plan | success
 
-  const fmtCard = v => v.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim().slice(0, 19);
-  const fmtExpiry = v => v.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2').slice(0, 5);
-
-  // ── Open Stripe checkout ──
-  const openStripe = async () => {
-    setLoading(true);
-    try {
-      const d = await api.post('/payments/create-intent', { type: 'premium_student' });
-      setPaymentDbId(d.paymentDbId);
-      setStep('stripe');
-    } catch (e) { toast.error(e.error || 'Failed to initialize payment'); }
-    finally { setLoading(false); }
-  };
+  const loadRazorpay = () =>
+    new Promise((resolve, reject) => {
+      if (window.Razorpay) return resolve();
+      const s = document.createElement('script');
+      s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      s.onload = resolve;
+      s.onerror = reject;
+      document.body.appendChild(s);
+    });
 
   // ── Open Razorpay checkout ──
   const openRazorpay = async () => {
     setLoading(true);
     try {
       const d = await api.post('/payments/create-razorpay-order', { type: 'premium_student' });
-      setPaymentDbId(d.paymentDbId);
 
       if (d.demo) {
-        // Demo mode — simulate Razorpay
         const res = await api.post('/payments/demo-success', {
           paymentDbId: d.paymentDbId,
           type: 'premium_student',
@@ -105,7 +94,8 @@ export default function Upgrade() {
         return;
       }
 
-      // Real Razorpay checkout
+      await loadRazorpay();
+
       const options = {
         key: d.keyId,
         amount: d.amount,
@@ -131,40 +121,29 @@ export default function Upgrade() {
         prefill: { email: profile?.email || '' },
         theme: { color: '#6366f1' },
         modal: { ondismiss: () => toast('Payment cancelled') },
+        // Enable all Indian payment methods including UPI
+        method: {
+          upi: true,
+          card: true,
+          netbanking: true,
+          wallet: true,
+          emi: false,
+        },
+        config: {
+          display: {
+            blocks: {
+              upi: { name: 'UPI', instruments: [{ method: 'upi' }] },
+              card: { name: 'Cards', instruments: [{ method: 'card' }] },
+              netbanking: { name: 'Net Banking', instruments: [{ method: 'netbanking' }] },
+            },
+            sequence: ['block.upi', 'block.card', 'block.netbanking'],
+            preferences: { show_default_blocks: false },
+          },
+        },
       };
 
-      // Load Razorpay SDK dynamically
-      if (!window.Razorpay) {
-        await new Promise((resolve, reject) => {
-          const s = document.createElement('script');
-          s.src = 'https://checkout.razorpay.com/v1/checkout.js';
-          s.onload = resolve;
-          s.onerror = reject;
-          document.body.appendChild(s);
-        });
-      }
       new window.Razorpay(options).open();
-    } catch (e) { toast.error(e.error || 'Failed to initialize Razorpay'); }
-    finally { setLoading(false); }
-  };
-
-  // ── Process Stripe card ──
-  const processStripe = async () => {
-    if (!cardDetails.number || !cardDetails.expiry || !cardDetails.cvv || !cardDetails.name) {
-      toast.error('Please fill all card details'); return;
-    }
-    setLoading(true);
-    try {
-      const d = await api.post('/payments/demo-success', {
-        paymentDbId,
-        type: 'premium_student',
-        gateway: 'stripe',
-      });
-      setSlip(d.slip);
-      setStep('success');
-      await refresh();
-      toast.success('🎉 Premium activated!');
-    } catch (e) { toast.error(e.error || 'Payment failed'); }
+    } catch (e) { toast.error(e.error || 'Failed to initialize payment'); }
     finally { setLoading(false); }
   };
 
@@ -220,10 +199,10 @@ export default function Upgrade() {
               </div>
               <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4, color: 'var(--accent)' }}>Premium</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 4 }}>
-                <span style={{ fontSize: 32, fontWeight: 700 }}>$4.99</span>
+                <span style={{ fontSize: 32, fontWeight: 700 }}>₹415</span>
                 <span style={{ fontSize: 14, color: 'var(--text-2)' }}>/year</span>
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 16 }}>≈ ₹415 / year</div>
+              <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 16 }}>≈ $4.99 / year</div>
               {[
                 'Unlimited AI mock interviews',
                 'Unlimited resume analyses',
@@ -237,92 +216,29 @@ export default function Upgrade() {
                 </div>
               ))}
 
-              {/* Payment buttons */}
-              <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <button className="btn btn-primary btn-full" onClick={openStripe} disabled={loading}>
-                  <CreditCard size={15} /> Pay with Card (Stripe) — $4.99
-                </button>
+              <div style={{ marginTop: 20 }}>
                 <button
                   className="btn btn-full"
-                  style={{ background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: 'var(--r-md)', padding: '10px 16px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                  style={{ background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: 'var(--r-md)', padding: '12px 16px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 15 }}
                   onClick={openRazorpay}
                   disabled={loading}
                 >
-                  <Smartphone size={15} /> Pay with UPI / Card (Razorpay) — ₹415
+                  {loading
+                    ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#fff' }} /> Initializing…</>
+                    : <><Smartphone size={16} /> Pay ₹415 — UPI / Card / NetBanking</>}
                 </button>
               </div>
             </div>
           </div>
 
           <div className="alert alert-info" style={{ fontSize: 13 }}>
-            🔒 <strong>Secure checkout.</strong> Choose Stripe for international cards or Razorpay for UPI, Indian cards & netbanking.
+            🔒 <strong>Secure checkout via Razorpay.</strong> Pay with UPI (PhonePe, GPay, Paytm), Indian debit/credit cards, or Net Banking.
+          </div>
+
+          <div style={{ background: 'var(--surface-2)', borderRadius: 'var(--r-md)', padding: '12px 16px', marginTop: 12, fontSize: 12, color: 'var(--text-2)' }}>
+            🧪 <strong>Test mode — use:</strong> UPI ID: <code>success@razorpay</code> &nbsp;|&nbsp; Card: <code>5267 3181 8797 5449</code>, expiry 12/26, CVV 123, OTP 1234
           </div>
         </>
-      )}
-
-      {/* ── Step: Stripe Card Form ── */}
-      {step === 'stripe' && (
-        <div style={{ maxWidth: 440, margin: '0 auto' }}>
-          <div style={{ marginBottom: 24 }}>
-            <button className="btn btn-ghost btn-sm" onClick={() => setStep('plan')}>← Back</button>
-          </div>
-          <div className="card card-p">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 17 }}>Premium — 1 Year</div>
-                <div style={{ fontSize: 13, color: 'var(--text-2)' }}>Unlimited AI tools + Priority visibility</div>
-              </div>
-              <div style={{ fontWeight: 700, fontSize: 22 }}>$4.99</div>
-            </div>
-            <hr className="divider" />
-
-            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <CreditCard size={16} /> Card Details
-            </div>
-
-            <div className="form-group">
-              <label className="label">Cardholder Name</label>
-              <input className="input" placeholder="Your Name" value={cardDetails.name} onChange={e => setCardDetails(d => ({ ...d, name: e.target.value }))} />
-            </div>
-            <div className="form-group">
-              <label className="label">Card Number</label>
-              <input className="input" placeholder="4242 4242 4242 4242"
-                value={cardDetails.number}
-                onChange={e => setCardDetails(d => ({ ...d, number: fmtCard(e.target.value) }))}
-                maxLength={19} inputMode="numeric" />
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="label">Expiry</label>
-                <input className="input" placeholder="MM/YY"
-                  value={cardDetails.expiry}
-                  onChange={e => setCardDetails(d => ({ ...d, expiry: fmtExpiry(e.target.value) }))}
-                  maxLength={5} />
-              </div>
-              <div className="form-group">
-                <label className="label">CVV</label>
-                <input className="input" placeholder="123"
-                  value={cardDetails.cvv}
-                  onChange={e => setCardDetails(d => ({ ...d, cvv: e.target.value.replace(/\D/g, '').slice(0, 3) }))}
-                  maxLength={3} />
-              </div>
-            </div>
-
-            <div style={{ background: 'var(--yellow-bg)', border: '1px solid rgba(245,158,11,.2)', borderRadius: 'var(--r-md)', padding: '10px 14px', fontSize: 12, color: 'var(--yellow-text)', marginBottom: 20 }}>
-              🧪 <strong>Demo mode:</strong> Use any card details. Test card: <code>4242 4242 4242 4242</code>, expiry 12/28, CVV 123
-            </div>
-
-            <button className="btn btn-primary btn-full btn-lg" onClick={processStripe} disabled={loading}>
-              {loading
-                ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#fff' }} /> Processing…</>
-                : <><Shield size={15} /> Pay $4.99 — Activate Premium</>}
-            </button>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, fontSize: 12, color: 'var(--text-3)' }}>
-              <Shield size={12} /> Secured by Stripe
-            </div>
-          </div>
-        </div>
       )}
 
       {/* ── Step: Success ── */}
