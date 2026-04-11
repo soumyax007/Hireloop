@@ -7,7 +7,12 @@ let _stripe = null;
 function getStripe() {
   if (_stripe) return _stripe;
   if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('your_stripe')) return null;
-  _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-04-10' });
+  _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2024-04-10',
+    timeout: 20000,          // 20s — Railway can be slow to establish outbound connections
+    maxNetworkRetries: 2,    // retry twice on network errors
+    telemetry: false,        // disable Stripe telemetry to reduce connection overhead
+  });
   return _stripe;
 }
 
