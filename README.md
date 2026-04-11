@@ -145,7 +145,6 @@ Use the **Demo** buttons on the login page for instant access:
 **Already configured!** The NVIDIA API key is pre-filled in `backend/.env`:
 
 ```env
-NVIDIA_API_KEY=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
 NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
 NVIDIA_MODEL=meta/llama-3.1-70b-instruct
 ```
