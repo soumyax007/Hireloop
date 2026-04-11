@@ -1,7 +1,9 @@
 import axios from 'axios';
 
-const api = axios.create({ baseURL: '/api', timeout: 45000 });
-
+const api = axios.create({ 
+  baseURL: import.meta.env.VITE_API_URL || '/api', 
+  timeout: 45000 
+});
 api.interceptors.request.use(cfg => {
   const t = localStorage.getItem('hl_token');
   if (t) cfg.headers.Authorization = `Bearer ${t}`;
