@@ -4,7 +4,7 @@ import { initials } from '../../utils/helpers';
 import {
   LayoutDashboard, Briefcase, FileText, Brain, Mic, Star,
   Building2, Users, BarChart3, Megaphone, LogOut,
-  ChevronRight, Zap, ClipboardList
+  ChevronRight, Zap, ClipboardList, UserCircle
 } from 'lucide-react';
 
 const STUDENT_NAV = [
@@ -17,7 +17,10 @@ const STUDENT_NAV = [
     { to: '/student/resume-ai', icon: Brain, label: 'Resume Analyser' },
     { to: '/student/mock-interview', icon: Mic, label: 'Mock Interview' },
   ]},
-  { section: 'Account', items: [{ to: '/student/upgrade', icon: Star, label: 'Upgrade' }] },
+  { section: 'Account', items: [
+    { to: '/student/upgrade', icon: Star, label: 'Upgrade' },
+    { to: '/student/profile', icon: UserCircle, label: 'My Profile' },
+  ]},
 ];
 
 const RECRUITER_NAV = [

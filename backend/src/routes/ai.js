@@ -144,4 +144,42 @@ router.get('/resume-analyses', authenticate, authorize('student'), (req, res) =>
   res.json(db.prepare('SELECT id,ats_score,match_percentage,overall_feedback,created_at FROM resume_analyses WHERE student_id=? ORDER BY created_at DESC LIMIT 10').all(sp.id));
 });
 
+// POST /ai/chat — general assistant chatbot
+router.post('/chat', authenticate, async (req, res) => {
+  try {
+    const { message, history = [] } = req.body;
+    if (!message) return res.status(400).json({ error: 'Message required' });
+
+    const db = getDb();
+    const role = req.user.role;
+    let contextInfo = `You are HireLoop Assistant, a helpful AI for a college placement portal. User role: ${role}.`;
+
+    if (role === 'student') {
+      const sp = db.prepare('SELECT * FROM student_profiles WHERE user_id=?').get(req.user.id);
+      if (sp) {
+        const apps = db.prepare('SELECT COUNT(*) c FROM applications WHERE student_id=?').get(sp.id);
+        contextInfo += ` Student: ${sp.first_name} ${sp.last_name}, ${sp.branch}, CGPA: ${sp.cgpa}, Applications: ${apps.c}, Premium: ${sp.is_premium ? 'Yes' : 'No'}.`;
+        contextInfo += ` You can help them: navigate the portal (Dashboard, Browse Jobs, My Applications, Resume Analyser, Mock Interview, Upgrade), improve their profile, find suitable jobs, and understand their application status.`;
+      }
+    } else if (role === 'recruiter') {
+      const cp = db.prepare('SELECT * FROM company_profiles WHERE user_id=?').get(req.user.id);
+      if (cp) contextInfo += ` Recruiter at ${cp.company_name}. Help them: post jobs quickly (go to Post New Job in sidebar), manage applicants, and understand the hiring pipeline.`;
+    } else if (role === 'admin') {
+      const pending = db.prepare("SELECT COUNT(*) c FROM jobs WHERE status='pending'").get();
+      const companies = db.prepare("SELECT COUNT(*) c FROM company_profiles WHERE is_approved=0").get();
+      contextInfo += ` Admin. Pending jobs: ${pending.c}, Pending company approvals: ${companies.c}. Help them prioritize tasks and manage the platform.`;
+    }
+
+    contextInfo += ` Be concise, friendly, and specific. For navigation, tell them exactly which sidebar item to click.`;
+
+    const msgs = [
+      ...history.slice(-6).map(h => ({ role: h.role, content: h.content })),
+      { role: 'user', content: message }
+    ];
+
+    const reply = await ai.chat(contextInfo, msgs);
+    res.json({ reply });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Chat failed. Please try again.' }); }
+});
+
 module.exports = router;

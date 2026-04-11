@@ -16,6 +16,7 @@ import Applications from './pages/student/Applications';
 import ResumeAI from './pages/student/ResumeAI';
 import MockInterview from './pages/student/MockInterview';
 import Upgrade from './pages/student/Upgrade';
+import Profile from './pages/student/Profile';
 
 // Recruiter
 import RecruiterDashboard from './pages/recruiter/Dashboard';
@@ -92,6 +93,7 @@ export default function App() {
               <Route path="/student/resume-ai" element={<ResumeAI />} />
               <Route path="/student/mock-interview" element={<MockInterview />} />
               <Route path="/student/upgrade" element={<Upgrade />} />
+              <Route path="/student/profile" element={<Profile />} />
             </Route>
           </Route>
 

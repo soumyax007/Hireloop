@@ -166,7 +166,7 @@ export default function Upgrade() {
           <div className="grid-2" style={{ marginBottom: 28, gap: 16 }}>
             <div className="card card-p" style={{ opacity: .85 }}>
               <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>Free</div>
-              <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 16 }}>$0</div>
+              <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 16 }}>₹0</div>
               {[
                 [true, '3 resume analyses / day'],
                 [true, '3 mock interviews / month'],

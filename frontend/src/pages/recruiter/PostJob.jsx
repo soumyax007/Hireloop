@@ -110,7 +110,7 @@ export default function PostJob() {
     <div style={{ maxWidth: 680, margin: '0 auto' }}>
       <div style={{ marginBottom: 24 }}>
         <h1 className="page-title">Post a New Job</h1>
-        <p className="page-sub">Fill in the details below. A listing fee of $9.99 applies after submission.</p>
+        <p className="page-sub">Fill in the details below. A listing fee of ₹8,299 applies after submission.</p>
       </div>
 
       <form onSubmit={createJob}>

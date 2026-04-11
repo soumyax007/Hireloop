@@ -167,4 +167,21 @@ function scoreJobMatch(studentSkills, requiredSkills) {
   return Math.round((matched / requiredSkills.length) * 100);
 }
 
-module.exports = { analyseResume, generateCoverLetter, generateInterviewQuestions, evaluateAnswer, generateInterviewSummary, scoreJobMatch };
+module.exports = { analyseResume, generateCoverLetter, generateInterviewQuestions, evaluateAnswer, generateInterviewSummary, scoreJobMatch, chat };
+
+async function chat(systemContext, messages) {
+  try {
+    const client = getClient();
+    if (!client) return "I'm in demo mode — AI chat is not configured. Please set your NVIDIA_API_KEY.";
+    const response = await client.chat.completions.create({
+      model: process.env.NVIDIA_MODEL || 'meta/llama-3.1-70b-instruct',
+      messages: [{ role: 'system', content: systemContext }, ...messages],
+      max_tokens: 300,
+      temperature: 0.7,
+    });
+    return response.choices[0]?.message?.content || "Sorry, I couldn't generate a response.";
+  } catch (e) {
+    console.error('AI chat error:', e.message);
+    return "I'm having trouble connecting right now. Please try again shortly.";
+  }
+}

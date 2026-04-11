@@ -62,4 +62,38 @@ router.get('/me', authenticate, (req, res) => {
   res.json({ user: u, profile: getProfile(db, req.user.id, req.user.role) });
 });
 
+// PUT /auth/update-profile
+router.put('/update-profile', authenticate, (req, res) => {
+  try {
+    const db = getDb();
+    const { role } = req.user;
+    const { firstName, lastName, college, branch, batch, cgpa, companyName, industry, name, institution, avatarUrl } = req.body;
+    if (role === 'student') {
+      db.prepare(`UPDATE student_profiles SET first_name=COALESCE(?,first_name), last_name=COALESCE(?,last_name), college=COALESCE(?,college), branch=COALESCE(?,branch), batch=COALESCE(?,batch), cgpa=COALESCE(?,cgpa), avatar_url=COALESCE(?,avatar_url) WHERE user_id=?`)
+        .run(firstName||null, lastName||null, college||null, branch||null, batch||null, cgpa||null, avatarUrl||null, req.user.id);
+    } else if (role === 'recruiter') {
+      db.prepare(`UPDATE company_profiles SET company_name=COALESCE(?,company_name), industry=COALESCE(?,industry) WHERE user_id=?`)
+        .run(companyName||null, industry||null, req.user.id);
+    } else if (role === 'admin') {
+      db.prepare(`UPDATE admin_profiles SET name=COALESCE(?,name), institution=COALESCE(?,institution) WHERE user_id=?`)
+        .run(name||null, institution||null, req.user.id);
+    }
+    res.json({ success: true, profile: getProfile(db, req.user.id, role) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Profile update failed' }); }
+});
+
+// PUT /auth/change-password
+router.put('/change-password', authenticate, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Both passwords required' });
+    if (newPassword.length < 6) return res.status(400).json({ error: 'New password must be at least 6 characters' });
+    const db = getDb();
+    const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.user.id);
+    if (!bcrypt.compareSync(currentPassword, user.password)) return res.status(401).json({ error: 'Current password is incorrect' });
+    db.prepare('UPDATE users SET password=? WHERE id=?').run(bcrypt.hashSync(newPassword, 10), req.user.id);
+    res.json({ success: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Password change failed' }); }
+});
+
 module.exports = router;
