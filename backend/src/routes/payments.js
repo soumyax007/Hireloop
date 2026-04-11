@@ -32,7 +32,16 @@ router.post('/create-intent', authenticate, async (req, res) => {
       priceInfo: getPriceInfo(type),
       stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
     });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to create Stripe payment: ' + e.message }); }
+  } catch (e) {
+    console.error('Stripe create-intent error:', {
+      message: e.message,
+      type: e.type,
+      code: e.code,
+      stripeKeyPresent: !!process.env.STRIPE_SECRET_KEY,
+      stripeKeyPrefix: process.env.STRIPE_SECRET_KEY?.slice(0, 8),
+    });
+    res.status(500).json({ error: 'Failed to create Stripe payment: ' + e.message });
+  }
 });
 
 // ── POST /payments/create-razorpay-order ──────────────────────────────────

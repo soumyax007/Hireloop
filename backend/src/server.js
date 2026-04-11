@@ -12,6 +12,9 @@ try { getDb(); console.log('✅ Database ready'); } catch (e) { console.error('�
 
 const app = express();
 
+// Railway / Vercel run behind a reverse proxy — trust it for rate limiting & IP detection
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
@@ -47,6 +50,19 @@ app.get('/api/health', (req, res) => {
     payments: (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('your_stripe')) ? 'Stripe ✓' : 'Demo mode',
     timestamp: new Date().toISOString()
   });
+});
+
+// Stripe connectivity test — hit this to debug Railway → Stripe connection
+app.get('/api/health/stripe', async (req, res) => {
+  const { getStripe } = require('./services/payment.service');
+  const stripe = getStripe();
+  if (!stripe) return res.json({ status: 'demo_mode', message: 'STRIPE_SECRET_KEY not configured or is placeholder' });
+  try {
+    const balance = await stripe.balance.retrieve();
+    res.json({ status: 'connected', available: balance.available, keyPrefix: process.env.STRIPE_SECRET_KEY?.slice(0, 8) });
+  } catch (e) {
+    res.status(500).json({ status: 'error', message: e.message, type: e.type, code: e.code });
+  }
 });
 
 // 404

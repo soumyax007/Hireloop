@@ -123,12 +123,15 @@ async function confirmStripePayment(paymentIntentId) {
     return { status: 'succeeded', receipt_url: null, charge_id: null };
   }
 
-  const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+  const intent = await stripe.paymentIntents.retrieve(paymentIntentId, {
+    expand: ['latest_charge'],
+  });
+
   let receipt_url = null, charge_id = null;
-  if (intent.latest_charge) {
-    const charge = await stripe.charges.retrieve(intent.latest_charge);
-    receipt_url = charge.receipt_url;
-    charge_id = charge.id;
+  const charge = intent.latest_charge;
+  if (charge && typeof charge === 'object') {
+    receipt_url = charge.receipt_url || null;
+    charge_id = charge.id || null;
   }
   return { status: intent.status, receipt_url, charge_id };
 }
