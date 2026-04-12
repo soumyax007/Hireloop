@@ -52,6 +52,18 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// One-time migration: set default admin as super admin
+app.post('/api/setup/super-admin', (req, res) => {
+  try {
+    const { getDb } = require('./db');
+    const db = getDb();
+    const { email, secret } = req.body;
+    if (secret !== (process.env.JWT_SECRET || '')) return res.status(403).json({ error: 'Invalid secret' });
+    const result = db.prepare('UPDATE users SET is_super_admin=1 WHERE email=? AND role=?').run(email, 'admin');
+    res.json({ success: true, changed: result.changes });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Stripe connectivity test — hit this to debug Railway → Stripe connection
 app.get('/api/health/stripe', async (req, res) => {
   const { getStripe } = require('./services/payment.service');

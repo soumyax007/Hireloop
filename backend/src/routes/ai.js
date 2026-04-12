@@ -150,6 +150,13 @@ router.post('/chat', authenticate, async (req, res) => {
     const { message, history = [] } = req.body;
     if (!message) return res.status(400).json({ error: 'Message required' });
 
+    // Guardrail: chatbot cannot trigger job posting on behalf of recruiter
+    const blockedPhrases = ['post job', 'create job', 'submit job', 'publish job', 'add job listing', 'post a job'];
+    const msgLower = message.toLowerCase();
+    if (req.user.role === 'recruiter' && blockedPhrases.some(p => msgLower.includes(p))) {
+      return res.json({ reply: 'I can guide you to post a job, but I cannot do it on your behalf for security reasons. Please click **"Post New Job"** in the sidebar to create a job listing yourself.' });
+    }
+
     const db = getDb();
     const role = req.user.role;
     let contextInfo = `You are HireLoop Assistant, a helpful AI for a college placement portal. User role: ${role}.`;

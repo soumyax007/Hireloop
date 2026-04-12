@@ -29,9 +29,14 @@ router.post('/', authenticate, authorize('student'), (req, res) => {
   const id = uuidv4();
   db.prepare('INSERT INTO applications(id,job_id,student_id,cover_letter) VALUES(?,?,?,?)').run(id, jobId, sp.id, coverLetter);
 
-  // Notify recruiter
+  // Notify recruiter with deep link
   const recruiter = db.prepare('SELECT u.id FROM company_profiles cp JOIN users u ON cp.user_id=u.id WHERE cp.id=?').get(job.company_id);
-  if (recruiter) db.prepare('INSERT INTO notifications(id,user_id,title,message,type,link) VALUES(?,?,?,?,?,?)').run(uuidv4(), recruiter.id, 'New Application', `${sp.first_name} ${sp.last_name} applied for ${job.title}`, 'info', '/recruiter/applicants');
+  if (recruiter) db.prepare('INSERT INTO notifications(id,user_id,title,message,type,link,metadata) VALUES(?,?,?,?,?,?,?)').run(
+    uuidv4(), recruiter.id, 'New Application',
+    `${sp.first_name} ${sp.last_name} applied for ${job.title}`,
+    'info', `/recruiter/applicants`,
+    JSON.stringify({ jobId: job.id, jobTitle: job.title, studentName: `${sp.first_name} ${sp.last_name}`, applicationId: id })
+  );
 
   res.status(201).json({ id, message: 'Application submitted successfully' });
 });
@@ -71,9 +76,14 @@ router.patch('/:id/status', authenticate, authorize('recruiter','admin'), (req, 
 
   db.prepare(`UPDATE applications SET status=?,notes=?,interview_slot=?,updated_at=datetime('now') WHERE id=?`).run(status, notes||app.notes, interviewSlot||app.interview_slot, req.params.id);
 
-  // Notify student
-  const msgs = { shortlisted:'You\'ve been shortlisted! Check your dashboard.', interview_scheduled:`Interview scheduled${interviewSlot ? ` for ${interviewSlot}` : ''}.`, offer:'🎉 Congratulations! You have received a job offer!', rejected:'Application status update.' };
-  if (msgs[status]) db.prepare('INSERT INTO notifications(id,user_id,title,message,type) VALUES(?,?,?,?,?)').run(uuidv4(), app.suid, `Update: ${app.title}`, msgs[status], status === 'offer' ? 'success' : status === 'rejected' ? 'warning' : 'info');
+  // Notify student with deep link
+  const msgs = { shortlisted:'You\'ve been shortlisted! Check your dashboard.', interview_scheduled:`Interview scheduled${interviewSlot ? ` for ${interviewSlot}` : ''}.`, offer:'🎉 Congratulations! You have received a job offer!', rejected:'Your application status has been updated.' };
+  if (msgs[status]) db.prepare('INSERT INTO notifications(id,user_id,title,message,type,link,metadata) VALUES(?,?,?,?,?,?,?)').run(
+    uuidv4(), app.suid, `Update: ${app.title}`, msgs[status],
+    status === 'offer' ? 'success' : status === 'rejected' ? 'warning' : 'info',
+    `/student/applications`,
+    JSON.stringify({ jobId: app.job_id, jobTitle: app.title, status })
+  );
 
   res.json({ success: true, status });
 });

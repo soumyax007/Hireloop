@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Camera, Lock, User, Save, CheckCircle } from 'lucide-react';
+import { Camera, Lock, User, Save, CheckCircle, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 
@@ -8,6 +9,7 @@ const BRANCHES = ['Computer Science','Electronics & Communication','Mechanical E
 
 export default function Profile() {
   const { user, profile, setProfile, refresh } = useAuth();
+  const navigate = useNavigate();
   const [tab, setTab] = useState('profile'); // profile | password
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -67,6 +69,9 @@ export default function Profile() {
   return (
     <div style={{ maxWidth: 620, margin: '0 auto' }}>
       <div style={{ marginBottom: 28 }}>
+        <button onClick={() => navigate(-1)} style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-2)', fontSize: 13, background: 'none', border: 'none', cursor: 'pointer', marginBottom: 12, fontFamily: 'var(--font)', padding: 0 }}>
+          <ArrowLeft size={14} /> Back
+        </button>
         <h1 className="page-title">My Profile</h1>
         <p className="page-sub">Update your personal information and account settings</p>
       </div>

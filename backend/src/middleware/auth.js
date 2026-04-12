@@ -6,7 +6,7 @@ const authenticate = (req, res, next) => {
   if (!auth?.startsWith('Bearer ')) return res.status(401).json({ error: 'Authentication required' });
   try {
     const { userId } = jwt.verify(auth.split(' ')[1], process.env.JWT_SECRET);
-    const user = getDb().prepare('SELECT id,email,role,is_active FROM users WHERE id=?').get(userId);
+    const user = getDb().prepare('SELECT id,email,role,is_active,is_super_admin FROM users WHERE id=?').get(userId);
     if (!user || !user.is_active) return res.status(401).json({ error: 'Account not found or inactive' });
     req.user = user;
     next();
@@ -20,4 +20,10 @@ const authorize = (...roles) => (req, res, next) => {
   next();
 };
 
-module.exports = { authenticate, authorize };
+// Only the super admin (default admin) can perform this action
+const requireSuperAdmin = (req, res, next) => {
+  if (!req.user.is_super_admin) return res.status(403).json({ error: 'Only the default admin can perform this action' });
+  next();
+};
+
+module.exports = { authenticate, authorize, requireSuperAdmin };

@@ -1,11 +1,18 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { initials } from '../../utils/helpers';
 import {
-  LayoutDashboard, Briefcase, FileText, Brain, Mic, Star,
+  LayoutDashboard, Briefcase, Brain, Mic, Star,
   Building2, Users, BarChart3, Megaphone, LogOut,
-  ChevronRight, Zap, ClipboardList, UserCircle
+  Zap, ClipboardList, UserCircle, Trophy, Settings
 } from 'lucide-react';
+
+const HireLogo = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
 
 const STUDENT_NAV = [
   { section: 'Overview', items: [{ to: '/student/dashboard', icon: LayoutDashboard, label: 'Dashboard' }] },
@@ -16,6 +23,9 @@ const STUDENT_NAV = [
   { section: 'AI Tools', items: [
     { to: '/student/resume-ai', icon: Brain, label: 'Resume Analyser' },
     { to: '/student/mock-interview', icon: Mic, label: 'Mock Interview' },
+  ]},
+  { section: 'Compete', items: [
+    { to: '/competition', icon: Trophy, label: 'Competitions' },
   ]},
   { section: 'Account', items: [
     { to: '/student/upgrade', icon: Star, label: 'Upgrade' },
@@ -30,6 +40,12 @@ const RECRUITER_NAV = [
     { to: '/recruiter/applicants', icon: Users, label: 'Applicants' },
     { to: '/recruiter/post-job', icon: Zap, label: 'Post New Job' },
   ]},
+  { section: 'Compete', items: [
+    { to: '/competition', icon: Trophy, label: 'Competitions' },
+  ]},
+  { section: 'Account', items: [
+    { to: '/recruiter/profile', icon: Settings, label: 'Company Profile' },
+  ]},
 ];
 
 const ADMIN_NAV = [
@@ -42,6 +58,9 @@ const ADMIN_NAV = [
   { section: 'Insights', items: [
     { to: '/admin/reports', icon: BarChart3, label: 'Reports' },
     { to: '/admin/announcements', icon: Megaphone, label: 'Announcements' },
+  ]},
+  { section: 'Compete', items: [
+    { to: '/competition', icon: Trophy, label: 'Competitions' },
   ]},
 ];
 
@@ -65,7 +84,10 @@ function NavGroups({ groups }) {
 
 export default function Sidebar({ open, onClose }) {
   const { user, profile, logout } = useAuth();
+  const navigate = useNavigate();
   const role = user?.role;
+
+  const dashboardRoute = { student: '/student/dashboard', recruiter: '/recruiter/dashboard', admin: '/admin/dashboard' }[role] || '/';
 
   const getName = () => {
     if (role === 'student') return `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || user?.email;
@@ -74,26 +96,20 @@ export default function Sidebar({ open, onClose }) {
   };
 
   const getRoleLabel = () => ({ student: 'Student', recruiter: 'Recruiter', admin: 'Admin' })[role] || '';
-
   const navGroups = role === 'student' ? STUDENT_NAV : role === 'recruiter' ? RECRUITER_NAV : ADMIN_NAV;
 
   return (
     <>
       <div className={`sidebar-overlay${open ? ' open' : ''}`} onClick={onClose} />
       <nav className={`sidebar${open ? ' open' : ''}`}>
-        {/* Logo */}
-        <div className="sb-logo">
-          <div className="sb-logo-mark">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
+        {/* Logo — clickable to dashboard */}
+        <Link to={dashboardRoute} className="sb-logo" style={{ textDecoration: 'none' }} onClick={onClose}>
+          <div className="sb-logo-mark"><HireLogo /></div>
           <div>
             <div className="sb-logo-text">HireLoop</div>
             <div className="sb-logo-sub">{getRoleLabel()} Portal</div>
           </div>
-        </div>
+        </Link>
 
         {/* Nav groups */}
         <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 8 }}>
@@ -102,7 +118,7 @@ export default function Sidebar({ open, onClose }) {
 
         {/* User footer */}
         <div className="sb-user">
-          <div className="sb-user-ava">
+          <div className="sb-user-ava" style={{ cursor: 'pointer' }} onClick={() => { if (role === 'student') navigate('/student/profile'); else if (role === 'recruiter') navigate('/recruiter/profile'); onClose(); }}>
             {profile?.avatar_url
               ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
               : initials(profile?.first_name || profile?.company_name || profile?.name || '', profile?.last_name || '')}

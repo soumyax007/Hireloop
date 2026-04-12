@@ -11,9 +11,11 @@ const TITLES = {
   '/student/profile': 'My Profile',
   '/recruiter/dashboard': 'Dashboard', '/recruiter/jobs': 'My Jobs',
   '/recruiter/applicants': 'Applicants', '/recruiter/post-job': 'Post a Job',
+  '/recruiter/profile': 'Company Profile',
   '/admin/dashboard': 'Dashboard', '/admin/companies': 'Companies',
   '/admin/students': 'Students', '/admin/jobs': 'All Jobs',
   '/admin/reports': 'Placement Reports', '/admin/announcements': 'Announcements',
+  '/competition': 'Competitions',
 };
 
 export default function AppShell() {

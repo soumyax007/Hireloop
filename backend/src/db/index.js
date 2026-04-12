@@ -175,7 +175,54 @@ function applySchema() {
       type TEXT DEFAULT 'info',
       is_read INTEGER DEFAULT 0,
       link TEXT DEFAULT '',
+      metadata TEXT DEFAULT '{}',
       created_at TEXT DEFAULT(datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS mock_tests (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      category TEXT DEFAULT 'aptitude',
+      duration_minutes INTEGER DEFAULT 30,
+      total_questions INTEGER DEFAULT 20,
+      questions TEXT DEFAULT '[]',
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT(datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS mock_test_attempts (
+      id TEXT PRIMARY KEY,
+      test_id TEXT NOT NULL REFERENCES mock_tests(id) ON DELETE CASCADE,
+      student_id TEXT NOT NULL REFERENCES student_profiles(id) ON DELETE CASCADE,
+      score INTEGER DEFAULT 0,
+      total_marks INTEGER DEFAULT 0,
+      time_taken_seconds INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'completed',
+      completed_at TEXT DEFAULT(datetime('now')),
+      UNIQUE(test_id, student_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS competitions (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      type TEXT DEFAULT 'coding',
+      start_time TEXT,
+      end_time TEXT,
+      prize TEXT DEFAULT '',
+      max_participants INTEGER DEFAULT 0,
+      rules TEXT DEFAULT '',
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT(datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS competition_registrations (
+      id TEXT PRIMARY KEY,
+      competition_id TEXT NOT NULL REFERENCES competitions(id) ON DELETE CASCADE,
+      student_id TEXT NOT NULL REFERENCES student_profiles(id) ON DELETE CASCADE,
+      registered_at TEXT DEFAULT(datetime('now')),
+      UNIQUE(competition_id, student_id)
     );
 
     CREATE INDEX IF NOT EXISTS idx_apps_student ON applications(student_id);
@@ -185,6 +232,11 @@ function applySchema() {
     CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications(user_id);
     CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
   `);
+
+  // Safe migrations for existing databases
+  const safeAlter = (sql) => { try { db.exec(sql); } catch {} };
+  safeAlter('ALTER TABLE users ADD COLUMN is_super_admin INTEGER DEFAULT 0');
+  safeAlter('ALTER TABLE notifications ADD COLUMN metadata TEXT DEFAULT "{}"');
 }
 
 module.exports = { getDb };

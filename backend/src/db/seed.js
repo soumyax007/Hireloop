@@ -90,6 +90,9 @@ async function seed() {
   db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,is_pinned) VALUES(?,?,?,?,?,?)').run(uuidv4(),adminPID,'⚠️ Resume Submission Deadline','Final deadline for resume submission is April 30th. No extensions. Use the Resume Builder or upload directly.','warning',1);
   db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,is_pinned) VALUES(?,?,?,?,?,?)').run(uuidv4(),adminPID,'Mock Interview Sessions Available','AI-powered mock interviews are now live. Premium students get unlimited sessions. Upgrade from your dashboard.','info',0);
 
+  // Mark the default admin as super admin
+  db.prepare('UPDATE users SET is_super_admin=1 WHERE email=?').run('admin@hireloop.io');
+
   console.log('✅ Seeded successfully!\n');
   console.log('🔐 Demo Credentials:');
   console.log('   Student   → demo@student.iitd.ac.in / Student@123');

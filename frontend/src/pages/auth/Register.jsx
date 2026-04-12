@@ -36,13 +36,27 @@ export default function Register() {
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
+  const [validatingEmail, setValidatingEmail] = useState(false);
+
   const validateEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  const goToDetails = () => {
+  const goToDetails = async () => {
     if (!form.email) { setError('Email is required'); return; }
     if (!validateEmail(form.email)) { setError('Please enter a valid email address'); return; }
     if (!form.password || form.password.length < 6) { setError('Password must be at least 6 characters'); return; }
-    setError(''); setStep(3);
+    setError('');
+    setValidatingEmail(true);
+    try {
+      const res = await fetch((import.meta.env.VITE_API_URL || '/api') + '/auth/validate-email', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: form.email })
+      });
+      const data = await res.json();
+      if (!data.valid) { setError(data.error || 'Please use a real email address'); return; }
+    } catch {
+      // If validation fails due to network, allow proceeding
+    } finally { setValidatingEmail(false); }
+    setStep(3);
   };
 
   const submit = async () => {
@@ -155,8 +169,8 @@ export default function Register() {
                   </div>
                 )}
               </div>
-              <button className="btn btn-primary btn-full btn-lg" onClick={goToDetails} style={{ marginTop: 8 }}>
-                Continue <ArrowRight size={16} />
+              <button className="btn btn-primary btn-full btn-lg" onClick={goToDetails} disabled={validatingEmail} style={{ marginTop: 8 }}>
+                {validatingEmail ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#fff' }} /> Verifying email…</> : <>Continue <ArrowRight size={16} /></>}
               </button>
             </div>
           )}

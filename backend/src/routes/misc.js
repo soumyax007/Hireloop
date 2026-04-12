@@ -103,3 +103,90 @@ router.get('/announcements', authenticate, (req, res) => {
 });
 
 module.exports = router;
+
+// ── NOTIFICATIONS — single dismiss & mark read ────────────────────────────────
+
+router.patch('/notifications/:id/read', authenticate, (req, res) => {
+  getDb().prepare('UPDATE notifications SET is_read=1 WHERE id=? AND user_id=?').run(req.params.id, req.user.id);
+  res.json({ success: true });
+});
+
+router.delete('/notifications/:id', authenticate, (req, res) => {
+  getDb().prepare('DELETE FROM notifications WHERE id=? AND user_id=?').run(req.params.id, req.user.id);
+  res.json({ success: true });
+});
+
+// ── COMPETITIONS ─────────────────────────────────────────────────────────────
+
+router.get('/competitions', authenticate, (req, res) => {
+  const db = getDb();
+  const comps = db.prepare("SELECT * FROM competitions WHERE is_active=1 ORDER BY created_at DESC").all();
+  const studentId = req.user.role === 'student'
+    ? db.prepare('SELECT id FROM student_profiles WHERE user_id=?').get(req.user.id)?.id
+    : null;
+  const result = comps.map(c => {
+    const count = db.prepare('SELECT COUNT(*) c FROM competition_registrations WHERE competition_id=?').get(c.id).c;
+    const registered = studentId
+      ? !!db.prepare('SELECT id FROM competition_registrations WHERE competition_id=? AND student_id=?').get(c.id, studentId)
+      : false;
+    return { ...c, participant_count: count, is_registered: registered };
+  });
+  res.json(result);
+});
+
+router.post('/competitions', authenticate, authorize('admin'), (req, res) => {
+  const db = getDb();
+  const { title, description, type = 'coding', startTime, endTime, prize = '', maxParticipants = 0, rules = '' } = req.body;
+  if (!title) return res.status(400).json({ error: 'Title required' });
+  const id = uuidv4();
+  db.prepare('INSERT INTO competitions(id,title,description,type,start_time,end_time,prize,max_participants,rules) VALUES(?,?,?,?,?,?,?,?,?)').run(id, title, description, type, startTime, endTime, prize, maxParticipants, rules);
+  res.status(201).json(db.prepare('SELECT * FROM competitions WHERE id=?').get(id));
+});
+
+router.post('/competitions/:id/register', authenticate, authorize('student'), (req, res) => {
+  const db = getDb();
+  const sp = db.prepare('SELECT id FROM student_profiles WHERE user_id=?').get(req.user.id);
+  if (!sp) return res.status(404).json({ error: 'Profile not found' });
+  const comp = db.prepare('SELECT * FROM competitions WHERE id=? AND is_active=1').get(req.params.id);
+  if (!comp) return res.status(404).json({ error: 'Competition not found' });
+  if (comp.max_participants > 0) {
+    const count = db.prepare('SELECT COUNT(*) c FROM competition_registrations WHERE competition_id=?').get(req.params.id).c;
+    if (count >= comp.max_participants) return res.status(400).json({ error: 'Competition is full' });
+  }
+  try {
+    db.prepare('INSERT INTO competition_registrations(id,competition_id,student_id) VALUES(?,?,?)').run(uuidv4(), req.params.id, sp.id);
+    res.json({ success: true });
+  } catch { res.status(409).json({ error: 'Already registered' }); }
+});
+
+router.delete('/competitions/:id', authenticate, authorize('admin'), (req, res) => {
+  getDb().prepare('DELETE FROM competitions WHERE id=?').run(req.params.id);
+  res.json({ success: true });
+});
+
+// ── MOCK TESTS ───────────────────────────────────────────────────────────────
+
+router.get('/mock-tests', authenticate, (req, res) => {
+  const db = getDb();
+  const tests = db.prepare('SELECT id,title,description,category,duration_minutes,total_questions,is_active,created_at FROM mock_tests WHERE is_active=1 ORDER BY created_at DESC').all();
+  if (req.user.role === 'student') {
+    const sp = db.prepare('SELECT id FROM student_profiles WHERE user_id=?').get(req.user.id);
+    if (sp) {
+      return res.json(tests.map(t => {
+        const attempt = db.prepare('SELECT * FROM mock_test_attempts WHERE test_id=? AND student_id=?').get(t.id, sp.id);
+        return { ...t, attempt };
+      }));
+    }
+  }
+  res.json(tests);
+});
+
+router.post('/mock-tests', authenticate, authorize('admin'), (req, res) => {
+  const db = getDb();
+  const { title, description, category = 'aptitude', durationMinutes = 30, totalQuestions = 20, questions = [] } = req.body;
+  if (!title) return res.status(400).json({ error: 'Title required' });
+  const id = uuidv4();
+  db.prepare('INSERT INTO mock_tests(id,title,description,category,duration_minutes,total_questions,questions) VALUES(?,?,?,?,?,?,?)').run(id, title, description, category, durationMinutes, totalQuestions, JSON.stringify(questions));
+  res.status(201).json(db.prepare('SELECT * FROM mock_tests WHERE id=?').get(id));
+});
+
