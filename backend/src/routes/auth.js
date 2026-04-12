@@ -3,8 +3,11 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const dns = require('dns').promises;
 const { v4: uuidv4 } = require('uuid');
+const { OAuth2Client } = require('google-auth-library');
 const { getDb } = require('../db');
 const { authenticate, requireSuperAdmin } = require('../middleware/auth');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const sign = id => jwt.sign({ userId: id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
 
@@ -14,7 +17,7 @@ function getProfile(db, userId, role) {
   else if (role === 'recruiter') p = db.prepare('SELECT * FROM company_profiles WHERE user_id=?').get(userId);
   else if (role === 'admin') p = db.prepare('SELECT * FROM admin_profiles WHERE user_id=?').get(userId);
   if (p) {
-    ['skills','eligible_branches','eligible_batches','required_skills'].forEach(f => {
+    ['skills', 'eligible_branches', 'eligible_batches', 'required_skills'].forEach(f => {
       if (p[f] && typeof p[f] === 'string') try { p[f] = JSON.parse(p[f]); } catch {}
     });
   }
@@ -37,16 +40,15 @@ router.post('/validate-email', async (req, res) => {
   }
 });
 
+// POST /auth/register
 router.post('/register', async (req, res) => {
   try {
     const { email, password, role, ...extra } = req.body;
     if (!email || !password || !role) return res.status(400).json({ error: 'email, password, and role are required' });
-    if (!['student','recruiter','admin'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
+    if (!['student', 'recruiter', 'admin'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
 
-    // Email format check
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Invalid email format' });
 
-    // DNS MX validation
     try {
       const domain = email.split('@')[1];
       const records = await dns.resolveMx(domain);
@@ -62,11 +64,11 @@ router.post('/register', async (req, res) => {
     db.prepare('INSERT INTO users(id,email,password,role) VALUES(?,?,?,?)').run(uid, email.toLowerCase().trim(), bcrypt.hashSync(password, 10), role);
 
     if (role === 'student') {
-      db.prepare('INSERT INTO student_profiles(id,user_id,first_name,last_name,college,branch,batch,cgpa,skills) VALUES(?,?,?,?,?,?,?,?,?)').run(pid, uid, extra.firstName||'', extra.lastName||'', extra.college||'', extra.branch||'', extra.batch||2025, extra.cgpa||0, '[]');
+      db.prepare('INSERT INTO student_profiles(id,user_id,first_name,last_name,college,branch,batch,cgpa,skills) VALUES(?,?,?,?,?,?,?,?,?)').run(pid, uid, extra.firstName || '', extra.lastName || '', extra.college || '', extra.branch || '', extra.batch || 2025, extra.cgpa || 0, '[]');
     } else if (role === 'recruiter') {
-      db.prepare('INSERT INTO company_profiles(id,user_id,company_name,industry) VALUES(?,?,?,?)').run(pid, uid, extra.companyName||'', extra.industry||'');
+      db.prepare('INSERT INTO company_profiles(id,user_id,company_name,industry) VALUES(?,?,?,?)').run(pid, uid, extra.companyName || '', extra.industry || '');
     } else {
-      db.prepare('INSERT INTO admin_profiles(id,user_id,name,institution) VALUES(?,?,?,?)').run(pid, uid, extra.name||'Admin', extra.institution||'');
+      db.prepare('INSERT INTO admin_profiles(id,user_id,name,institution) VALUES(?,?,?,?)').run(pid, uid, extra.name || 'Admin', extra.institution || '');
     }
 
     const user = { id: uid, email: email.toLowerCase(), role, is_super_admin: 0 };
@@ -74,6 +76,7 @@ router.post('/register', async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Registration failed' }); }
 });
 
+// POST /auth/login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -85,6 +88,68 @@ router.post('/login', async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Login failed' }); }
 });
 
+// POST /auth/google — Google OAuth sign-in / sign-up
+router.post('/google', async (req, res) => {
+  try {
+    const { token, role } = req.body;
+
+    if (!token) return res.status(400).json({ error: 'Google token is required' });
+
+    // 1. Verify the token with Google
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: token,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    } catch {
+      return res.status(401).json({ error: 'Invalid Google token' });
+    }
+
+    const email = payload.email.toLowerCase();
+    const db = getDb();
+
+    // 2. Check if user already exists
+    let user = db.prepare('SELECT * FROM users WHERE email=? AND is_active=1').get(email);
+
+    if (!user) {
+      // 3. New user — role is required to register them
+      if (!role || !['student', 'recruiter', 'admin'].includes(role)) {
+        return res.status(400).json({ error: 'Role is required for new Google sign-ups' });
+      }
+
+      const uid = uuidv4(), pid = uuidv4();
+      // Random unguessable password since they authenticate via Google
+      const randomPassword = bcrypt.hashSync(uuidv4(), 10);
+
+      db.prepare('INSERT INTO users(id,email,password,role) VALUES(?,?,?,?)').run(uid, email, randomPassword, role);
+
+      if (role === 'student') {
+        db.prepare('INSERT INTO student_profiles(id,user_id,first_name,last_name,college,branch,batch,cgpa,skills) VALUES(?,?,?,?,?,?,?,?,?)')
+          .run(pid, uid, payload.given_name || '', payload.family_name || '', '', '', 2025, 0, '[]');
+      } else if (role === 'recruiter') {
+        db.prepare('INSERT INTO company_profiles(id,user_id,company_name,industry) VALUES(?,?,?,?)')
+          .run(pid, uid, '', '');
+      } else if (role === 'admin') {
+        db.prepare('INSERT INTO admin_profiles(id,user_id,name,institution) VALUES(?,?,?,?)')
+          .run(pid, uid, `${payload.given_name || ''} ${payload.family_name || ''}`.trim() || 'Admin', '');
+      }
+
+      user = db.prepare('SELECT * FROM users WHERE id=?').get(uid);
+    }
+
+    // 4. Return JWT + profile (same shape as /login)
+    const u = { id: user.id, email: user.email, role: user.role, is_super_admin: user.is_super_admin || 0 };
+    res.json({ token: sign(user.id), user: u, profile: getProfile(db, user.id, user.role) });
+
+  } catch (e) {
+    console.error('Google Auth Error:', e);
+    res.status(500).json({ error: 'Google authentication failed' });
+  }
+});
+
+// GET /auth/me
 router.get('/me', authenticate, (req, res) => {
   const db = getDb();
   const u = { id: req.user.id, email: req.user.email, role: req.user.role, is_super_admin: req.user.is_super_admin || 0 };
@@ -99,13 +164,13 @@ router.put('/update-profile', authenticate, (req, res) => {
     const { firstName, lastName, college, branch, batch, cgpa, companyName, industry, description, website, headquarters, companySize, name, institution, avatarUrl } = req.body;
     if (role === 'student') {
       db.prepare(`UPDATE student_profiles SET first_name=COALESCE(?,first_name), last_name=COALESCE(?,last_name), college=COALESCE(?,college), branch=COALESCE(?,branch), batch=COALESCE(?,batch), cgpa=COALESCE(?,cgpa), avatar_url=COALESCE(?,avatar_url) WHERE user_id=?`)
-        .run(firstName||null, lastName||null, college||null, branch||null, batch||null, cgpa||null, avatarUrl||null, req.user.id);
+        .run(firstName || null, lastName || null, college || null, branch || null, batch || null, cgpa || null, avatarUrl || null, req.user.id);
     } else if (role === 'recruiter') {
       db.prepare(`UPDATE company_profiles SET company_name=COALESCE(?,company_name), industry=COALESCE(?,industry), description=COALESCE(?,description), website=COALESCE(?,website), headquarters=COALESCE(?,headquarters), company_size=COALESCE(?,company_size) WHERE user_id=?`)
-        .run(companyName||null, industry||null, description||null, website||null, headquarters||null, companySize||null, req.user.id);
+        .run(companyName || null, industry || null, description || null, website || null, headquarters || null, companySize || null, req.user.id);
     } else if (role === 'admin') {
       db.prepare(`UPDATE admin_profiles SET name=COALESCE(?,name), institution=COALESCE(?,institution) WHERE user_id=?`)
-        .run(name||null, institution||null, req.user.id);
+        .run(name || null, institution || null, req.user.id);
     }
     res.json({ success: true, profile: getProfile(db, req.user.id, role) });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Profile update failed' }); }
@@ -128,7 +193,6 @@ router.put('/change-password', authenticate, async (req, res) => {
 // DELETE /auth/account — any user can delete their own account EXCEPT the super admin
 router.delete('/account', authenticate, (req, res) => {
   try {
-    // Super admin cannot delete their own account
     if (req.user.is_super_admin) return res.status(403).json({ error: 'The default admin account cannot be deleted' });
     const db = getDb();
     db.prepare('DELETE FROM users WHERE id=?').run(req.user.id);

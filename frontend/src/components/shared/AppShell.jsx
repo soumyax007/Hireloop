@@ -5,24 +5,32 @@ import Topbar from './Topbar';
 import AIChatbot from './AIChatbot';
 
 const TITLES = {
-  '/student/dashboard': 'Dashboard', '/student/jobs': 'Browse Jobs',
-  '/student/applications': 'My Applications', '/student/resume-ai': 'Resume Analyser',
-  '/student/mock-interview': 'Mock Interview', '/student/upgrade': 'Upgrade to Premium',
-  '/student/profile': 'My Profile',
-  '/recruiter/dashboard': 'Dashboard', '/recruiter/jobs': 'My Jobs',
-  '/recruiter/applicants': 'Applicants', '/recruiter/post-job': 'Post a Job',
-  '/recruiter/profile': 'Company Profile',
-  '/admin/dashboard': 'Dashboard', '/admin/companies': 'Companies',
-  '/admin/students': 'Students', '/admin/jobs': 'All Jobs',
-  '/admin/reports': 'Placement Reports', '/admin/announcements': 'Announcements',
-  '/competition': 'Competitions',
+  '/student/dashboard':    'Dashboard',
+  '/student/jobs':         'Browse Jobs',
+  '/student/applications': 'My Applications',
+  '/student/resume-ai':    'Resume Analyser',
+  '/student/mock-interview':'Mock Interview',
+  '/student/upgrade':      'Upgrade to Premium',
+  '/student/profile':      'My Profile',
+  '/recruiter/dashboard':  'Dashboard',
+  '/recruiter/jobs':       'My Jobs',
+  '/recruiter/applicants': 'Applicants',
+  '/recruiter/post-job':   'Post a Job',
+  '/recruiter/profile':    'Company Profile',
+  '/admin/dashboard':      'Dashboard',
+  '/admin/companies':      'Companies',
+  '/admin/students':       'Students',
+  '/admin/jobs':           'All Jobs',
+  '/admin/reports':        'Placement Reports',
+  '/admin/announcements':  'Announcements',
+  '/competition':          'Competitions',
 };
 
 const COLLAPSED_KEY = 'hl_sidebar_collapsed';
 
 export default function AppShell() {
-  const [sidebarOpen, setSidebarOpen]       = useState(false);
-  const [collapsed,   setCollapsed]         = useState(() => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed,   setCollapsed]   = useState(() => {
     try { return localStorage.getItem(COLLAPSED_KEY) === 'true'; } catch { return false; }
   });
   const { pathname } = useLocation();
@@ -31,6 +39,11 @@ export default function AppShell() {
   // Persist collapse state
   useEffect(() => {
     try { localStorage.setItem(COLLAPSED_KEY, String(collapsed)); } catch {}
+    // Also update CSS variable on root so main-wrap margin adjusts instantly
+    document.documentElement.style.setProperty(
+      '--current-sidebar-w',
+      collapsed ? 'var(--sidebar-collapsed-w)' : 'var(--sidebar-w)'
+    );
   }, [collapsed]);
 
   // Close mobile sidebar on route change
