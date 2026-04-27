@@ -1,14 +1,14 @@
-/* ═══════════════════════════════════════════════════════════════
-   HIRELOOP — ADDITIONS (append to end of global.css)
-   ═══════════════════════════════════════════════════════════════ */
 
-/* ─── Sidebar Collapse Variables ─────────────────────────────── */
+   /* HIRELOOP — ADDITIONS (append to end of global.css) */
+  
+
+/*  Sidebar Collapse Variables  */
 :root {
   --sidebar-collapsed-w: 64px;
   --current-sidebar-w: var(--sidebar-w);
 }
 
-/* ─── Collapsed Sidebar ──────────────────────────────────────── */
+/*  Collapsed Sidebar  */
 .sidebar {
   transition: width .25s cubic-bezier(.4,0,.2,1);
 }
@@ -75,7 +75,7 @@
   gap: 8px;
 }
 
-/* ─── Auth Page (Login/Register) ─────────────────────────────── */
+/*  Auth Page (Login/Register)  */
 .hl-auth-root {
   min-height: 100vh;
   display: flex;

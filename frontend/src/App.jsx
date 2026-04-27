@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 import AppShell from './components/shared/AppShell';
+import Landing from './pages/Landing';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 
@@ -61,13 +62,12 @@ export default function App() {
       <BrowserRouter>
         <Toaster position="top-right" toastOptions={{ style: { fontFamily: 'var(--font)', fontSize: 14, borderRadius: 10, boxShadow: 'var(--sh-md)' }, success: { iconTheme: { primary: 'var(--green)', secondary: '#fff' } }, error: { iconTheme: { primary: 'var(--red)', secondary: '#fff' } } }} />
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<Landing />} />
 
           <Route element={<RedirectIfAuth />}>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
           </Route>
-
           {/* Student */}
           <Route element={<RequireAuth allowedRoles={['student']} />}>
             <Route element={<AppShell />}>
