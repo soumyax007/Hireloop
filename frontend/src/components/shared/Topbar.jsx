@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Menu, Bell, X, CheckCheck, Trash2 } from 'lucide-react';
+import { Bell, X, CheckCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { timeAgo } from '../../utils/helpers';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 
-export default function Topbar({ title, onMenuClick }) {
+export default function Topbar({ title, onMenuClick, sidebarOpen }) {
   const { user } = useAuth();
   const nav = useNavigate();
   const [notifs, setNotifs] = useState([]);
@@ -70,8 +70,10 @@ export default function Topbar({ title, onMenuClick }) {
 
   return (
     <div className="topbar">
-      <button className="topbar-hamburger btn-ghost btn" onClick={onMenuClick} aria-label="Open menu">
-        <Menu size={20} />
+      <button className={`topbar-hamburger${sidebarOpen ? ' is-open' : ''}`} onClick={onMenuClick} aria-label="Toggle menu">
+        <span className="hamburger-bar" />
+        <span className="hamburger-bar" />
+        <span className="hamburger-bar" />
       </button>
       <span className="topbar-title">{title}</span>
       <div className="topbar-actions">

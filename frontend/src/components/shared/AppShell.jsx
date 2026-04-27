@@ -60,7 +60,7 @@ export default function AppShell() {
         onToggleCollapse={toggleCollapse}
       />
       <div className="main-wrap">
-        <Topbar title={title} onMenuClick={() => setSidebarOpen(o => !o)} />
+        <Topbar title={title} onMenuClick={() => setSidebarOpen(o => !o)} sidebarOpen={sidebarOpen} />
         <div className="page-content anim-in">
           <Outlet />
         </div>
