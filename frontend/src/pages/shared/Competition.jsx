@@ -71,7 +71,7 @@ export default function Competition() {
           <h1 className="page-title">Competitions</h1>
           <p className="page-sub">Compete, learn, and win — open to all HireLoop members</p>
         </div>
-        {user?.role === 'admin' && (
+        {['admin', 'recruiter'].includes(user?.role) && (
           <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
             <Plus size={15} /> Create Competition
           </button>
@@ -81,7 +81,7 @@ export default function Competition() {
       {comps.length === 0 ? (
         <EmptyState icon="🏆" title="No competitions yet"
           desc="Check back soon for upcoming competitions and challenges."
-          action={user?.role === 'admin' ? <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}><Plus size={13} /> Create First</button> : null}
+          action={['admin', 'recruiter'].includes(user?.role) ? <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}><Plus size={13} /> Create First</button> : null}
         />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
@@ -152,7 +152,7 @@ export default function Competition() {
                       {c.participant_count} participant{c.participant_count !== 1 ? 's' : ''}
                     </span>
                   )}
-                  {user?.role === 'admin' && (
+                  {['admin', 'recruiter'].includes(user?.role) && (
                     <button className="btn btn-danger btn-sm" style={{ marginLeft: 'auto' }} onClick={() => deleteComp(c.id)}>Delete</button>
                   )}
                 </div>
@@ -162,7 +162,7 @@ export default function Competition() {
         </div>
       )}
 
-      {/* Create Modal (Admin only) */}
+      {/* Create Modal */}
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Create Competition" size="md"
         footer={<><button className="btn btn-secondary" onClick={() => setShowCreate(false)}>Cancel</button><button className="btn btn-primary" form="comp-form" type="submit" disabled={saving}>{saving ? <div className="spinner spinner-sm" style={{ borderTopColor: '#fff' }} /> : 'Create'}</button></>}>
         <form id="comp-form" onSubmit={createComp}>

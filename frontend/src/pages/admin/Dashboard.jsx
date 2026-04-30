@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid } from 'recharts';
 import { LoadingCenter, EmptyState } from '../../components/shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
@@ -67,12 +67,12 @@ export default function AdminDashboard() {
         <div className="card card-p">
           <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 16 }}>Application Status</div>
           {statusData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                <Pie data={statusData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value" stroke="none" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} style={{ outline: 'none' }}>
                   {statusData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                 </Pie>
-                <Tooltip />
+                <Tooltip contentStyle={{ borderRadius: 10, border: 'none', boxShadow: 'var(--sh-md)', fontSize: 13, padding: '8px 12px' }} />
               </PieChart>
             </ResponsiveContainer>
           ) : <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)' }}>No data yet</div>}
@@ -82,12 +82,13 @@ export default function AdminDashboard() {
         <div className="card card-p">
           <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 16 }}>Placements by Branch</div>
           {(report?.byBranch || []).length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={report.byBranch.slice(0, 6)} margin={{ left: -20 }}>
-                <XAxis dataKey="branch" tick={{ fontSize: 10 }} tickFormatter={v => v.split(' ')[0]} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v, n) => [v, n === 'placed' ? 'Placed' : n]} />
-                <Bar dataKey="placed" fill="var(--accent)" radius={[4, 4, 0, 0]} />
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={report.byBranch.slice(0, 6)} margin={{ left: -25, bottom: -5, top: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-light)" />
+                <XAxis dataKey="branch" tick={{ fontSize: 11, fill: 'var(--text-2)' }} tickFormatter={v => v.split(' ')[0]} axisLine={false} tickLine={false} dy={10} />
+                <YAxis tick={{ fontSize: 11, fill: 'var(--text-2)' }} axisLine={false} tickLine={false} />
+                <Tooltip formatter={(v, n) => [v, n === 'placed' ? 'Placed' : n]} cursor={{ fill: 'var(--surface-2)' }} contentStyle={{ borderRadius: 10, border: 'none', boxShadow: 'var(--sh-md)', fontSize: 13 }} />
+                <Bar dataKey="placed" fill="var(--accent)" radius={[4, 4, 0, 0]} barSize={32} />
               </BarChart>
             </ResponsiveContainer>
           ) : <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-3)' }}>No data yet</div>}

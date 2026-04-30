@@ -278,9 +278,9 @@ export default function Landing() {
                   { label: 'Hire Talent', href: '/register' },
                   { label: 'Post Jobs', href: '/register' },
                 ].map(l => (
-                  <a key={l.label} href={l.href}
+                  <Link key={l.label} to={l.href}
                     style={{ fontSize: 13, color: 'rgba(255,255,255,.4)', textDecoration: 'none', transition: 'color .15s' }}
-                    onMouseEnter={e => e.target.style.color='#fff'} onMouseLeave={e => e.target.style.color='rgba(255,255,255,.4)'}>{l.label}</a>
+                    onMouseEnter={e => e.target.style.color='#fff'} onMouseLeave={e => e.target.style.color='rgba(255,255,255,.4)'}>{l.label}</Link>
                 ))}
               </div>
             </div>
@@ -304,7 +304,7 @@ export default function Landing() {
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)' }}>© {new Date().getFullYear()} HireLoop · South Asian University</div>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)' }}>Crafted by <span style={{ color: 'rgba(255,255,255,.6)', fontWeight: 500 }}>Soumya, Udit, Vijjval &amp; Vedant</span></div>
             <div style={{ display: 'flex', gap: 20 }}>
-              {['Privacy Policy','Terms of Service'].map(l => <a key={l} href="#" style={{ fontSize: 12, color: 'rgba(255,255,255,.3)', textDecoration: 'none' }}>{l}</a>)}
+              {['Privacy Policy','Terms of Service'].map(l => <a key={l} href="javascript:void(0)" style={{ fontSize: 12, color: 'rgba(255,255,255,.3)', textDecoration: 'none' }}>{l}</a>)}
             </div>
           </div>
         </div>

@@ -172,6 +172,8 @@ router.put('/change-password', authenticate, async (req, res) => {
 // DELETE /auth/account — any user can delete their own account EXCEPT the super admin
 router.delete('/account', authenticate, (req, res) => {
   try {
+    const PROTECTED_DEMOS = ['student@sau.int', 'recruiter@sau.ac.in', 'soumya@sau.ac.in', 'udit@sau.ac.in', 'vedant@sau.ac.in', 'admin@sau.int'];
+    if (PROTECTED_DEMOS.includes(req.user.email)) return res.status(403).json({ error: 'Demo accounts are protected and cannot be deleted.' });
     if (req.user.is_super_admin) return res.status(403).json({ error: 'The default admin account cannot be deleted' });
     const db = getDb();
     db.prepare('DELETE FROM users WHERE id=?').run(req.user.id);

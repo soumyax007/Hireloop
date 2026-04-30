@@ -49,14 +49,23 @@ router.get('/admin/students', authenticate, authorize('admin'), (req, res) => {
 });
 
 router.post('/admin/announcements', authenticate, authorize('admin'), (req, res) => {
-  const db = getDb();
-  const admin = db.prepare('SELECT id FROM admin_profiles WHERE user_id=?').get(req.user.id);
-  if (!admin) return res.status(404).json({ error: 'Admin profile not found' });
-  const { title, content, type='info', targetRole='all', isPinned=false, expiresAt } = req.body;
+  const { title, content, type, isPinned } = req.body;
   if (!title || !content) return res.status(400).json({ error: 'Title and content required' });
   const id = uuidv4();
-  db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,target_role,is_pinned,expires_at) VALUES(?,?,?,?,?,?,?,?)').run(id, admin.id, title, content, type, targetRole, isPinned?1:0, expiresAt||null);
-  res.status(201).json(db.prepare('SELECT * FROM announcements WHERE id=?').get(id));
+  const db = getDb();
+  db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,is_pinned) VALUES(?,?,?,?,?,?)')
+    .run(id, req.user.id, title, content, type || 'info', isPinned ? 1 : 0);
+
+  // Broadcast notification to all users
+  const users = db.prepare('SELECT id FROM users WHERE id != ?').all(req.user.id);
+  const insertNotif = db.prepare('INSERT INTO notifications(id,user_id,type,title,message,link) VALUES(?,?,?,?,?,?)');
+  db.transaction(() => {
+    for (const u of users) {
+      insertNotif.run(uuidv4(), u.id, 'info', '📢 ' + title, content.slice(0, 100) + '...', '/admin/announcements');
+    }
+  })();
+
+  res.json({ success: true, id });
 });
 
 router.delete('/admin/announcements/:id', authenticate, authorize('admin'), (req, res) => {
@@ -116,31 +125,24 @@ router.delete('/notifications/:id', authenticate, (req, res) => {
 
 router.get('/competitions', authenticate, (req, res) => {
   const db = getDb();
-  // Ensure tables exist (safe for Railway where schema migrations may not have run)
-  try { db.exec(`CREATE TABLE IF NOT EXISTS competitions (id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT DEFAULT '', type TEXT DEFAULT 'coding', start_time TEXT, end_time TEXT, prize TEXT DEFAULT '', max_participants INTEGER DEFAULT 0, rules TEXT DEFAULT '', is_active INTEGER DEFAULT 1, created_at TEXT DEFAULT(datetime('now')))`); } catch {}
-  try { db.exec(`CREATE TABLE IF NOT EXISTS competition_registrations (id TEXT PRIMARY KEY, competition_id TEXT NOT NULL, student_id TEXT NOT NULL, registered_at TEXT DEFAULT(datetime('now')), UNIQUE(competition_id, student_id))`); } catch {}
-
-  const comps = db.prepare("SELECT * FROM competitions WHERE is_active=1 ORDER BY created_at DESC").all();
-  const studentId = req.user.role === 'student'
-    ? db.prepare('SELECT id FROM student_profiles WHERE user_id=?').get(req.user.id)?.id
-    : null;
-  const result = comps.map(c => {
-    const count = db.prepare('SELECT COUNT(*) c FROM competition_registrations WHERE competition_id=?').get(c.id).c;
-    const registered = studentId
-      ? !!db.prepare('SELECT id FROM competition_registrations WHERE competition_id=? AND student_id=?').get(c.id, studentId)
-      : false;
-    return { ...c, participant_count: count, is_registered: registered };
-  });
-  res.json(result);
+  const comps = db.prepare('SELECT * FROM competitions ORDER BY start_time ASC').all();
+  if (req.user.role === 'student') {
+    const sp = db.prepare('SELECT id FROM student_profiles WHERE user_id=?').get(req.user.id);
+    if (sp) {
+      const registered = db.prepare('SELECT competition_id FROM competition_participants WHERE student_id=?').all(sp.id).map(r=>r.competition_id);
+      comps.forEach(c => c.is_registered = registered.includes(c.id));
+    }
+  }
+  res.json(comps);
 });
 
-router.post('/competitions', authenticate, authorize('admin'), (req, res) => {
-  const db = getDb();
-  const { title, description, type = 'coding', startTime, endTime, prize = '', maxParticipants = 0, rules = '' } = req.body;
-  if (!title) return res.status(400).json({ error: 'Title required' });
+router.post('/competitions', authenticate, authorize('admin', 'recruiter'), (req, res) => {
+  const { title, description, type, startTime, endTime, prize, maxParticipants, rules } = req.body;
+  if (!title) return res.status(400).json({ error: 'Title is required' });
   const id = uuidv4();
-  db.prepare('INSERT INTO competitions(id,title,description,type,start_time,end_time,prize,max_participants,rules) VALUES(?,?,?,?,?,?,?,?,?)').run(id, title, description, type, startTime, endTime, prize, maxParticipants, rules);
-  res.status(201).json(db.prepare('SELECT * FROM competitions WHERE id=?').get(id));
+  getDb().prepare('INSERT INTO competitions(id,title,description,type,start_time,end_time,prize,max_participants,rules) VALUES(?,?,?,?,?,?,?,?,?)')
+    .run(id, title, description, type||'coding', startTime, endTime, prize, maxParticipants||0, rules);
+  res.json({ success: true, id });
 });
 
 router.post('/competitions/:id/register', authenticate, authorize('student'), (req, res) => {
@@ -159,7 +161,7 @@ router.post('/competitions/:id/register', authenticate, authorize('student'), (r
   } catch { res.status(409).json({ error: 'Already registered' }); }
 });
 
-router.delete('/competitions/:id', authenticate, authorize('admin'), (req, res) => {
+router.delete('/competitions/:id', authenticate, authorize('admin', 'recruiter'), (req, res) => {
   getDb().prepare('DELETE FROM competitions WHERE id=?').run(req.params.id);
   res.json({ success: true });
 });

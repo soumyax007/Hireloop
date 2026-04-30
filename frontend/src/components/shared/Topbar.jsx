@@ -13,11 +13,20 @@ export default function Topbar({ title, onMenuClick, sidebarOpen }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
+  const prevUnread = useRef(0);
+
   const load = async () => {
     try {
       const d = await api.get('/notifications');
       setNotifs(d.notifications || []);
-      setUnread(d.unreadCount || 0);
+      const currentUnread = d.unreadCount || 0;
+      if (currentUnread > prevUnread.current) {
+        import('react-hot-toast').then(({ default: toast }) => {
+          toast('You have new notifications', { icon: '🔔' });
+        });
+      }
+      prevUnread.current = currentUnread;
+      setUnread(currentUnread);
     } catch {}
   };
 
