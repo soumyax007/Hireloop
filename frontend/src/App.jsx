@@ -6,6 +6,8 @@ import AppShell from './components/shared/AppShell';
 import Landing from './pages/Landing';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 
 import StudentDashboard from './pages/student/Dashboard';
 import StudentJobs from './pages/student/Jobs';
@@ -68,6 +70,8 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
           </Route>
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           {/* Student */}
           <Route element={<RequireAuth allowedRoles={['student']} />}>
             <Route element={<AppShell />}>
