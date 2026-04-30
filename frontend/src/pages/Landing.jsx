@@ -36,8 +36,8 @@ const SAULogo = ({ color = '#fff', size = 32 }) => (
   </svg>
 );
 
-// Campus photo from Unsplash (Indian university campus)
-const CAMPUS_IMG = 'https://images.unsplash.com/photo-1562774053-701939374585?w=1600&q=80&auto=format&fit=crop';
+// SAU campus photo (local asset)
+const CAMPUS_IMG = '/campus.jpg';
 
 export default function Landing() {
   const [scrolled, setScrolled] = useState(false);
@@ -255,22 +255,54 @@ export default function Landing() {
               </div>
               <p style={{ fontSize: 13, color: 'rgba(255,255,255,.4)', lineHeight: 1.7, maxWidth: 240 }}>The official career placement portal. Connecting students with opportunities that match their potential.</p>
             </div>
-            {[
-              { title: 'HireLoop', links: ['About Us','University Placements','Campus Team'] },
-              { title: 'Students & Recruiters', links: ['Jobs & Internships','Student Profile','Hire Talent','Post Jobs'] },
-              { title: 'Contact', links: ['Email Support','LinkedIn','Instagram'] },
-            ].map(col => (
-              <div key={col.title}>
-                <div style={{ color: '#fff', fontWeight: 600, fontSize: 13, marginBottom: 16 }}>{col.title}</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {col.links.map(l => <a key={l} href="#" style={{ fontSize: 13, color: 'rgba(255,255,255,.4)', textDecoration: 'none', transition: 'color .15s' }} onMouseEnter={e => e.target.style.color='#fff'} onMouseLeave={e => e.target.style.color='rgba(255,255,255,.4)'}>{l}</a>)}
-                </div>
+            <div>
+              <div style={{ color: '#fff', fontWeight: 600, fontSize: 13, marginBottom: 16 }}>HireLoop</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {[
+                  { label: 'About Us', href: 'https://sau.int/' },
+                  { label: 'University Website', href: 'https://sau.int/' },
+                  { label: 'Campus Placements', href: 'https://sau.int/' },
+                ].map(l => (
+                  <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 13, color: 'rgba(255,255,255,.4)', textDecoration: 'none', transition: 'color .15s' }}
+                    onMouseEnter={e => e.target.style.color='#fff'} onMouseLeave={e => e.target.style.color='rgba(255,255,255,.4)'}>{l.label}</a>
+                ))}
               </div>
-            ))}
+            </div>
+            <div>
+              <div style={{ color: '#fff', fontWeight: 600, fontSize: 13, marginBottom: 16 }}>Students &amp; Recruiters</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {[
+                  { label: 'Browse Jobs', href: '/login' },
+                  { label: 'Student Portal', href: '/login' },
+                  { label: 'Hire Talent', href: '/register' },
+                  { label: 'Post Jobs', href: '/register' },
+                ].map(l => (
+                  <a key={l.label} href={l.href}
+                    style={{ fontSize: 13, color: 'rgba(255,255,255,.4)', textDecoration: 'none', transition: 'color .15s' }}
+                    onMouseEnter={e => e.target.style.color='#fff'} onMouseLeave={e => e.target.style.color='rgba(255,255,255,.4)'}>{l.label}</a>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{ color: '#fff', fontWeight: 600, fontSize: 13, marginBottom: 16 }}>Connect</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {[
+                  { label: '🌐 SAU Website', href: 'https://sau.int/' },
+                  { label: '📸 Instagram', href: 'https://www.instagram.com/southasianuniversity/' },
+                  { label: '💼 LinkedIn', href: 'https://www.linkedin.com/school/south-asian-university/' },
+                  { label: '▶ YouTube', href: 'https://www.youtube.com/user/southasianuniversity' },
+                ].map(l => (
+                  <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 13, color: 'rgba(255,255,255,.4)', textDecoration: 'none', transition: 'color .15s' }}
+                    onMouseEnter={e => e.target.style.color='#fff'} onMouseLeave={e => e.target.style.color='rgba(255,255,255,.4)'}>{l.label}</a>
+                ))}
+              </div>
+            </div>
           </div>
           <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)' }}>© {new Date().getFullYear()} HireLoop · South Asian University</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)' }}>Crafted by <span style={{ color: 'rgba(255,255,255,.6)', fontWeight: 500 }}>Soumya, Udit, Vijjval & Vedant</span></div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)' }}>Crafted by <span style={{ color: 'rgba(255,255,255,.6)', fontWeight: 500 }}>Soumya, Udit, Vijjval &amp; Vedant</span></div>
             <div style={{ display: 'flex', gap: 20 }}>
               {['Privacy Policy','Terms of Service'].map(l => <a key={l} href="#" style={{ fontSize: 12, color: 'rgba(255,255,255,.3)', textDecoration: 'none' }}>{l}</a>)}
             </div>

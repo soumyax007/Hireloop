@@ -17,17 +17,27 @@ async function seed() {
   const hash = pwd => bcrypt.hashSync(pwd, 10);
 
   // ADMIN
-  const adminUID = uuidv4(), adminPID = uuidv4();
-  db.prepare('INSERT INTO users(id,email,password,role) VALUES(?,?,?,?)').run(adminUID,'admin@hireloop.io',hash('Admin@123'),'admin');
-  db.prepare('INSERT INTO admin_profiles(id,user_id,name,institution) VALUES(?,?,?,?)').run(adminPID,adminUID,'Dr. Soumya Sharma','IIT Delhi Placement Cell');
+  const adminPIDs = [];
+  const admins = [
+    { email: 'admin@sau.int', name: 'Placement Cell' },
+    { email: 'soumya@sau.ac.in', name: 'Soumyadip Debnath' },
+    { email: 'udit@sau.ac.in', name: 'Udit Sharma' },
+    { email: 'vedant@sau.ac.in', name: 'Vedant Gupta' },
+  ];
+  for (const a of admins) {
+    const uid = uuidv4(), pid = uuidv4();
+    db.prepare('INSERT INTO users(id,email,password,role,is_super_admin) VALUES(?,?,?,?,?)').run(uid,a.email,hash('Admin@SAU#2025'),'admin', 1);
+    db.prepare('INSERT INTO admin_profiles(id,user_id,name,institution) VALUES(?,?,?,?)').run(pid,uid,a.name,'South Asian University');
+    adminPIDs.push(pid);
+  }
 
   // STUDENTS
   const studentsData = [
-    { email:'arjun@student.iitd.ac.in', fn:'Arjun', ln:'Mehta', branch:'Computer Science', cgpa:8.7, skills:['React','Node.js','Python','Machine Learning','Docker'], batch:2025, premium:1 },
-    { email:'sneha@student.iitd.ac.in', fn:'Sneha', ln:'Patel', branch:'Electronics & Communication', cgpa:8.2, skills:['VLSI','Embedded C','MATLAB','PCB Design'], batch:2025, premium:0 },
-    { email:'rahul@student.iitd.ac.in', fn:'Rahul', ln:'Kumar', branch:'Mechanical Engineering', cgpa:7.9, skills:['CAD','SolidWorks','Python','ANSYS'], batch:2025, premium:0 },
-    { email:'priya@student.iitd.ac.in', fn:'Priya', ln:'Singh', branch:'Computer Science', cgpa:9.1, skills:['Java','Spring Boot','AWS','Kubernetes','SQL'], batch:2025, premium:1 },
-    { email:'demo@student.iitd.ac.in', fn:'Demo', ln:'Student', branch:'Computer Science', cgpa:8.5, skills:['React','TypeScript','Python','Node.js'], batch:2025, premium:0 },
+    { email:'arjun@student.sau.int', fn:'Arjun', ln:'Mehta', branch:'Computer Science', cgpa:8.7, skills:['React','Node.js','Python','Machine Learning','Docker'], batch:2025, premium:1 },
+    { email:'sneha@student.sau.int', fn:'Sneha', ln:'Patel', branch:'Electronics & Communication', cgpa:8.2, skills:['VLSI','Embedded C','MATLAB','PCB Design'], batch:2025, premium:0 },
+    { email:'rahul@student.sau.int', fn:'Rahul', ln:'Kumar', branch:'Mechanical Engineering', cgpa:7.9, skills:['CAD','SolidWorks','Python','ANSYS'], batch:2025, premium:0 },
+    { email:'priya@student.sau.int', fn:'Priya', ln:'Singh', branch:'Computer Science', cgpa:9.1, skills:['Java','Spring Boot','AWS','Kubernetes','SQL'], batch:2025, premium:1 },
+    { email:'student@sau.int', fn:'Demo', ln:'Student', branch:'Computer Science', cgpa:8.5, skills:['React','TypeScript','Python','Node.js'], batch:2025, premium:0 },
   ];
   const studentPIDs = [];
   for (const s of studentsData) {
@@ -43,7 +53,7 @@ async function seed() {
     { email:'hr@microsoft.com', name:'Microsoft India', industry:'Technology', desc:'Empower every person and organisation.', site:'https://microsoft.com', approved:1 },
     { email:'hr@goldman.com', name:'Goldman Sachs', industry:'Finance & Banking', desc:'Global investment banking firm.', site:'https://goldmansachs.com', approved:1 },
     { email:'hr@flipkart.com', name:'Flipkart', industry:'E-Commerce', desc:'India\'s leading e-commerce company.', site:'https://flipkart.com', approved:1 },
-    { email:'hr@startup.io', name:'TechNova AI', industry:'AI Startup', desc:'Building next-gen AI products.', site:'https://technova.io', approved:0 },
+    { email:'recruiter@sau.ac.in', name:'Demo Corp SAU', industry:'AI Startup', desc:'Building next-gen AI products.', site:'https://technova.io', approved:1 },
   ];
   const companyPIDs = [];
   for (const c of companiesData) {
@@ -85,10 +95,10 @@ async function seed() {
   }
 
   // ANNOUNCEMENTS
-  db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,is_pinned) VALUES(?,?,?,?,?,?)').run(uuidv4(),adminPID,'Campus Placement Season 2025 is Open','All eligible students must complete their profiles and upload updated resumes before May 15th. 50+ companies expected this season.','success',1);
-  db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,is_pinned) VALUES(?,?,?,?,?,?)').run(uuidv4(),adminPID,'Pre-Placement Talk: Google India','Google India will host a PPT on April 22nd at 3 PM, Auditorium Hall A. Register via your student portal.','info',0);
-  db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,is_pinned) VALUES(?,?,?,?,?,?)').run(uuidv4(),adminPID,'Resume Submission Deadline','Final deadline for resume submission is April 30th. No extensions. Use the Resume Builder or upload directly.','warning',1);
-  db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,is_pinned) VALUES(?,?,?,?,?,?)').run(uuidv4(),adminPID,'Mock Interview Sessions Available','AI-powered mock interviews are now live. Premium students get unlimited sessions. Upgrade from your dashboard.','info',0);
+  db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,is_pinned) VALUES(?,?,?,?,?,?)').run(uuidv4(),adminPIDs[0],'Campus Placement Season 2025 is Open','All eligible students must complete their profiles and upload updated resumes before May 15th. 50+ companies expected this season.','success',1);
+  db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,is_pinned) VALUES(?,?,?,?,?,?)').run(uuidv4(),adminPIDs[0],'Pre-Placement Talk: Google India','Google India will host a PPT on April 22nd at 3 PM, Auditorium Hall A. Register via your student portal.','info',0);
+  db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,is_pinned) VALUES(?,?,?,?,?,?)').run(uuidv4(),adminPIDs[0],'Resume Submission Deadline','Final deadline for resume submission is April 30th. No extensions. Use the Resume Builder or upload directly.','warning',1);
+  db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,is_pinned) VALUES(?,?,?,?,?,?)').run(uuidv4(),adminPIDs[0],'Mock Interview Sessions Available','AI-powered mock interviews are now live. Premium students get unlimited sessions. Upgrade from your dashboard.','info',0);
 
   // COMPETITIONS — seed demo data so page is never empty
   const now = new Date();
@@ -126,36 +136,14 @@ async function seed() {
     80, 'Teams of 2-3. Written submission due before presentation. Case revealed 48 hours prior.', 1
   );
 
-  // STANDARD DEMO ACCOUNTS — fixed passwords so demo fill button always works
-  // These are the accounts used by the login page demo button
-  try {
-    db.prepare('INSERT OR IGNORE INTO users(id,email,password,role) VALUES(?,?,?,?)').run(uuidv4(),'student@hireloop.io',hash('password123'),'student');
-    const demoStudentUser = db.prepare('SELECT id FROM users WHERE email=?').get('student@hireloop.io');
-    if (demoStudentUser) {
-      const existing = db.prepare('SELECT id FROM student_profiles WHERE user_id=?').get(demoStudentUser.id);
-      if (!existing) db.prepare('INSERT INTO student_profiles(id,user_id,first_name,last_name,college,branch,batch,cgpa,skills) VALUES(?,?,?,?,?,?,?,?,?)').run(uuidv4(),demoStudentUser.id,'Demo','Student','South Asian University','Computer Science',2025,8.5,'["React","Node.js","Python"]');
-    }
-    db.prepare('INSERT OR IGNORE INTO users(id,email,password,role) VALUES(?,?,?,?)').run(uuidv4(),'recruiter@hireloop.io',hash('password123'),'recruiter');
-    const demoRecUser = db.prepare('SELECT id FROM users WHERE email=?').get('recruiter@hireloop.io');
-    if (demoRecUser) {
-      const existing = db.prepare('SELECT id FROM company_profiles WHERE user_id=?').get(demoRecUser.id);
-      if (!existing) db.prepare('INSERT INTO company_profiles(id,user_id,company_name,industry,is_approved) VALUES(?,?,?,?,?)').run(uuidv4(),demoRecUser.id,'Demo Company','Technology',1);
-    }
-    // Update admin password to also support password123 for demo
-    db.prepare('UPDATE users SET password=? WHERE email=?').run(hash('password123'),'admin@hireloop.io');
-  } catch (e) { console.log('Demo accounts already exist or minor error:', e.message); }
-
-  // Mark the default admin as super admin
-  db.prepare('UPDATE users SET is_super_admin=1 WHERE email=?').run('admin@hireloop.io');
+  // Remove legacy DEMO account generation code
 
   console.log('\nSeeded successfully!\n');
-  console.log('Demo Credentials (all use password: password123):');
-  console.log('  Student   -> student@hireloop.io  / password123');
-  console.log('  Recruiter -> recruiter@hireloop.io / password123');
-  console.log('  Admin     -> admin@hireloop.io     / password123\n');
-  console.log('Also available:');
-  console.log('  Student   -> demo@student.iitd.ac.in / Student@123');
-  console.log('  Recruiter -> hr@google.com            / Recruiter@123\n');
+  console.log('Demo Credentials:');
+  console.log('  Student   -> student@sau.int     / Student@123');
+  console.log('  Recruiter -> recruiter@sau.ac.in / Recruiter@123');
+  console.log('  Admin     -> admin@sau.int       / Admin@SAU#2025');
+  console.log('  Admin 2   -> soumya@sau.ac.in    / Admin@SAU#2025');
   process.exit(0);
 }
 

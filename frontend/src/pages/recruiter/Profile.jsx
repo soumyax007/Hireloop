@@ -9,6 +9,7 @@ export default function RecruiterProfile() {
   const [tab, setTab] = useState('company');
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const [form, setForm] = useState({
     companyName: profile?.company_name || '',
@@ -46,6 +47,19 @@ export default function RecruiterProfile() {
       setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (e) { toast.error(e.error || 'Failed'); }
     finally { setLoading(false); }
+  };
+
+  const deleteAccount = async () => {
+    const confirmed = window.confirm('Are you sure you want to permanently delete your company account? This cannot be undone.');
+    if (!confirmed) return;
+    setDeletingAccount(true);
+    try {
+      await api.delete('/auth/account');
+      toast.success('Account deleted');
+      useAuth().logout();
+      window.location.href = '/';
+    } catch (e) { toast.error(e.error || 'Deletion failed'); }
+    finally { setDeletingAccount(false); }
   };
 
   return (
@@ -128,9 +142,19 @@ export default function RecruiterProfile() {
           {pwForm.newPassword && pwForm.confirmPassword && pwForm.newPassword !== pwForm.confirmPassword && (
             <div className="form-error" style={{ marginBottom: 12 }}>Passwords do not match</div>
           )}
-          <button className="btn btn-primary btn-full" onClick={changePassword} disabled={loading}>
+          <button className="btn btn-primary btn-full" onClick={changePassword} disabled={loading} style={{ marginBottom: 24 }}>
             {loading ? <><div className="spinner spinner-sm" style={{ borderTopColor: '#fff' }} /> Changing…</> : <><Lock size={15} /> Change Password</>}
           </button>
+
+          {/* Danger zone */}
+          <div style={{ background: '#fff0ef', border: '1px solid rgba(255,59,48,.15)', borderRadius: 'var(--r-lg)', padding: '16px 18px' }}>
+            <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--red)', marginBottom: 4 }}>Danger Zone</div>
+            <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 14 }}>Permanently delete your company account and all associated job postings. This action cannot be undone.</div>
+            <button onClick={deleteAccount} disabled={deletingAccount}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', background: 'var(--red)', color: '#fff', border: 'none', borderRadius: 'var(--r-md)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)', transition: 'opacity .15s' }}>
+              {deletingAccount ? <div className="spinner spinner-sm" style={{ borderTopColor: '#fff' }} /> : 'Delete Company Account'}
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -102,10 +102,6 @@ router.get('/announcements', authenticate, (req, res) => {
   res.json(announcements);
 });
 
-module.exports = router;
-
-// ── NOTIFICATIONS — single dismiss & mark read ────────────────────────────────
-
 router.patch('/notifications/:id/read', authenticate, (req, res) => {
   getDb().prepare('UPDATE notifications SET is_read=1 WHERE id=? AND user_id=?').run(req.params.id, req.user.id);
   res.json({ success: true });
@@ -194,3 +190,4 @@ router.post('/mock-tests', authenticate, authorize('admin'), (req, res) => {
   res.status(201).json(db.prepare('SELECT * FROM mock_tests WHERE id=?').get(id));
 });
 
+module.exports = router;

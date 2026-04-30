@@ -20,7 +20,7 @@ const NAV = {
     { section: 'AI Tools', items: [
       { to: '/student/resume-ai',      icon: Brain,   label: 'Resume AI' },
       { to: '/student/mock-interview', icon: Mic,     label: 'Mock Interview' },
-      { to: '/student/competition',    icon: Trophy,  label: 'Competitions' },
+      { to: '/competition',            icon: Trophy,  label: 'Competitions' },
     ]},
     { section: 'Account', items: [
       { to: '/student/upgrade', icon: Star,   label: 'Go Premium' },
@@ -35,7 +35,7 @@ const NAV = {
       { to: '/recruiter/post-job',   icon: FileText,        label: 'Post a Job' },
     ]},
     { section: 'Account', items: [
-      { to: '/recruiter/competition', icon: Trophy, label: 'Competitions' },
+      { to: '/competition',           icon: Trophy, label: 'Competitions' },
       { to: '/recruiter/profile',     icon: User,   label: 'Profile' },
     ]},
   ],
@@ -47,12 +47,12 @@ const NAV = {
       { to: '/admin/jobs',          icon: Briefcase,       label: 'All Jobs' },
       { to: '/admin/reports',       icon: BarChart3,       label: 'Reports' },
       { to: '/admin/announcements', icon: Megaphone,       label: 'Announcements' },
-      { to: '/admin/competition',   icon: Trophy,          label: 'Competitions' },
+      { to: '/competition',         icon: Trophy,          label: 'Competitions' },
     ]},
   ],
 };
 
-export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) {
+export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }) {
   const { user, profile, logout } = useAuth();
   const loc = useLocation();
   const nav = useNavigate();
@@ -76,7 +76,7 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
   };
 
   // Close mobile menu on route change
-  useEffect(() => { setMobileOpen(false); }, [loc.pathname]);
+  useEffect(() => { onClose(); }, [loc.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isActive = to => loc.pathname === to;
 
@@ -152,21 +152,21 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
   return (
     <>
       {/* Mobile overlay */}
-      {mobileOpen && (
-        <div className="sidebar-overlay" style={{ display: 'block' }} onClick={() => setMobileOpen(false)} />
+      {open && (
+        <div className="sidebar-overlay" style={{ display: 'block' }} onClick={() => onClose()} />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`sidebar${collapsed ? ' sidebar-collapsed' : ''}`}
-        style={{ transform: mobileOpen ? "translateX(0)" : undefined, transition: "transform .28s cubic-bezier(.4,0,.2,1)" }}
+        className={`sidebar${collapsed ? ' sidebar-collapsed' : ''}${open ? ' open' : ''}`}
+        style={{ transition: "transform .28s cubic-bezier(.4,0,.2,1)" }}
       >
         <SidebarContent />
 
         {/* Desktop collapse toggle */}
         <button
           className="sb-collapse-btn"
-          onClick={() => setCollapsed(c => !c)}
+          onClick={() => onToggleCollapse()}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}

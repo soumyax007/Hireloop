@@ -95,68 +95,6 @@ router.post('/login', async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Login failed' }); }
 });
 
-// POST /auth/google — Google OAuth sign-in / sign-up
-router.post('/google', async (req, res) => {
-  try {
-    const { token, role } = req.body;
-
-    if (!token) return res.status(400).json({ error: 'Google token is required' });
-
-    // 1. Verify the token with Google
-    let payload;
-    try {
-      const ticket = await googleClient.verifyIdToken({
-        idToken: token,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-      payload = ticket.getPayload();
-    } catch {
-      return res.status(401).json({ error: 'Invalid Google token' });
-    }
-
-    const email = payload.email.toLowerCase();
-    const db = getDb();
-
-    // 2. Check if user already exists
-    let user = db.prepare('SELECT * FROM users WHERE email=? AND is_active=1').get(email);
-
-    if (!user) {
-      // 3. New user — role is required to register them
-      if (!role || !['student', 'recruiter', 'admin'].includes(role)) {
-        return res.status(400).json({ error: 'Role is required for new Google sign-ups' });
-      }
-
-      const uid = uuidv4(), pid = uuidv4();
-      // Random unguessable password since they authenticate via Google
-      const randomPassword = bcrypt.hashSync(uuidv4(), 10);
-
-      db.prepare('INSERT INTO users(id,email,password,role) VALUES(?,?,?,?)').run(uid, email, randomPassword, role);
-
-      if (role === 'student') {
-        db.prepare('INSERT INTO student_profiles(id,user_id,first_name,last_name,college,branch,batch,cgpa,skills) VALUES(?,?,?,?,?,?,?,?,?)')
-          .run(pid, uid, payload.given_name || '', payload.family_name || '', '', '', 2025, 0, '[]');
-      } else if (role === 'recruiter') {
-        db.prepare('INSERT INTO company_profiles(id,user_id,company_name,industry) VALUES(?,?,?,?)')
-          .run(pid, uid, '', '');
-      } else if (role === 'admin') {
-        db.prepare('INSERT INTO admin_profiles(id,user_id,name,institution) VALUES(?,?,?,?)')
-          .run(pid, uid, `${payload.given_name || ''} ${payload.family_name || ''}`.trim() || 'Admin', '');
-      }
-
-      user = db.prepare('SELECT * FROM users WHERE id=?').get(uid);
-    }
-
-    // 4. Return JWT + profile (same shape as /login)
-    const u = { id: user.id, email: user.email, role: user.role, is_super_admin: user.is_super_admin || 0 };
-    res.json({ token: sign(user.id), user: u, profile: getProfile(db, user.id, user.role) });
-
-  } catch (e) {
-    console.error('Google Auth Error:', e);
-    res.status(500).json({ error: 'Google authentication failed' });
-  }
-});
-
-// GET /auth/me
 // POST /auth/google — sign in or register via Google OAuth token
 router.post('/google', async (req, res) => {
   try {
@@ -172,7 +110,6 @@ router.post('/google', async (req, res) => {
     const db = getDb();
     let user = db.prepare('SELECT * FROM users WHERE email=?').get(email);
     if (!user) {
-      // Auto-register
       const uid = uuidv4(), pid = uuidv4();
       const allowedRole = ['student','recruiter','admin'].includes(role) ? role : 'student';
       db.prepare('INSERT INTO users(id,email,password,role) VALUES(?,?,?,?)').run(uid, email, bcrypt.hashSync(uuidv4(), 10), allowedRole);

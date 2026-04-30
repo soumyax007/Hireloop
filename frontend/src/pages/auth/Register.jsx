@@ -41,10 +41,16 @@ export default function Register() {
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const validateEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const SAU_DOMAINS = ['sau.ac.in', 'sau.int', 'sa.ac.in'];
+  const isSAUEmail = email => SAU_DOMAINS.includes(email.split('@')[1]?.toLowerCase());
 
   const goToDetails = async () => {
     if (!form.email) { setError('Email is required'); return; }
     if (!validateEmail(form.email)) { setError('Please enter a valid email address'); return; }
+    if (!isSAUEmail(form.email)) {
+      setError('Only South Asian University email addresses are allowed. Please use your @sau.ac.in or @sau.int email.');
+      return;
+    }
     if (!form.password || form.password.length < 6) { setError('Password must be at least 6 characters'); return; }
     setError(''); setValidatingEmail(true);
     try {
