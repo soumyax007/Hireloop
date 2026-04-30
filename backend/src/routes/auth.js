@@ -49,12 +49,19 @@ router.post('/register', async (req, res) => {
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Invalid email format' });
 
+    // DNS MX validation — soft fail: log but don't block if DNS lookup fails on Railway
     try {
       const domain = email.split('@')[1];
       const records = await dns.resolveMx(domain);
-      if (!records || records.length === 0) return res.status(400).json({ error: `The domain "${domain}" is not a valid email domain` });
-    } catch {
-      return res.status(400).json({ error: `Cannot verify email domain. Please use a real email address.` });
+      if (!records || records.length === 0) return res.status(400).json({ error: `The domain "${domain}" does not appear to be a valid email domain` });
+    } catch (dnsErr) {
+      // Railway or other cloud environments may have DNS restrictions.
+      // Only block if the error is definitely "domain not found" (ENOTFOUND), not a timeout or permission issue.
+      if (dnsErr.code === 'ENOTFOUND' || dnsErr.code === 'ENODATA') {
+        return res.status(400).json({ error: `Cannot verify email domain. Please use a real email address.` });
+      }
+      // For ETIMEOUT, ECONNREFUSED, etc. — let registration proceed
+      console.warn(`DNS lookup soft-failed for ${email}: ${dnsErr.code} — allowing registration`);
     }
 
     const db = getDb();

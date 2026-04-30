@@ -85,19 +85,77 @@ async function seed() {
   }
 
   // ANNOUNCEMENTS
-  db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,is_pinned) VALUES(?,?,?,?,?,?)').run(uuidv4(),adminPID,'🎉 Campus Placement Season 2025 is Open!','All eligible students must complete their profiles and upload updated resumes before May 15th. 50+ companies expected this season.','success',1);
+  db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,is_pinned) VALUES(?,?,?,?,?,?)').run(uuidv4(),adminPID,'Campus Placement Season 2025 is Open','All eligible students must complete their profiles and upload updated resumes before May 15th. 50+ companies expected this season.','success',1);
   db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,is_pinned) VALUES(?,?,?,?,?,?)').run(uuidv4(),adminPID,'Pre-Placement Talk: Google India','Google India will host a PPT on April 22nd at 3 PM, Auditorium Hall A. Register via your student portal.','info',0);
-  db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,is_pinned) VALUES(?,?,?,?,?,?)').run(uuidv4(),adminPID,'⚠️ Resume Submission Deadline','Final deadline for resume submission is April 30th. No extensions. Use the Resume Builder or upload directly.','warning',1);
+  db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,is_pinned) VALUES(?,?,?,?,?,?)').run(uuidv4(),adminPID,'Resume Submission Deadline','Final deadline for resume submission is April 30th. No extensions. Use the Resume Builder or upload directly.','warning',1);
   db.prepare('INSERT INTO announcements(id,admin_id,title,content,type,is_pinned) VALUES(?,?,?,?,?,?)').run(uuidv4(),adminPID,'Mock Interview Sessions Available','AI-powered mock interviews are now live. Premium students get unlimited sessions. Upgrade from your dashboard.','info',0);
+
+  // COMPETITIONS — seed demo data so page is never empty
+  const now = new Date();
+  const future1 = new Date(now.getTime() + 7*24*60*60*1000).toISOString();
+  const future2 = new Date(now.getTime() + 14*24*60*60*1000).toISOString();
+  const future3 = new Date(now.getTime() + 21*24*60*60*1000).toISOString();
+  const past1   = new Date(now.getTime() - 5*24*60*60*1000).toISOString();
+
+  db.prepare('INSERT OR IGNORE INTO competitions(id,title,description,type,start_time,end_time,prize,max_participants,rules,is_active) VALUES(?,?,?,?,?,?,?,?,?,?)').run(
+    uuidv4(),'SAU Coding Championship 2025',
+    'Test your data structures and algorithm skills against the best minds at SAU. Problems range from beginner to expert level.',
+    'coding', future1, future2,
+    'Winner: ₹25,000 cash + Google interview fast-track | Runner-up: ₹10,000 + certificate',
+    200, 'Individual participation only. No plagiarism. 3 hours per round. Online judge final verdict is binding.', 1
+  );
+  db.prepare('INSERT OR IGNORE INTO competitions(id,title,description,type,start_time,end_time,prize,max_participants,rules,is_active) VALUES(?,?,?,?,?,?,?,?,?,?)').run(
+    uuidv4(),'National Aptitude Challenge',
+    'Quantitative aptitude, logical reasoning, and verbal ability — a comprehensive test designed to mirror top company placement assessments.',
+    'aptitude', future2, future3,
+    'Top 3: ₹5,000 each + premium placement cell recommendation letter',
+    500, 'MCQ format. 90 minutes. No negative marking. Results announced within 48 hours.', 1
+  );
+  db.prepare('INSERT OR IGNORE INTO competitions(id,title,description,type,start_time,end_time,prize,max_participants,rules,is_active) VALUES(?,?,?,?,?,?,?,?,?,?)').run(
+    uuidv4(),'HireLoop Hackathon — Build for Bharat',
+    '48-hour hackathon to build solutions addressing real problems in education, healthcare, or financial inclusion. Mentors from Google and Microsoft.',
+    'hackathon', future1, future3,
+    'Winner: ₹50,000 + internship offer from sponsoring company | Best UX: ₹15,000',
+    150, 'Teams of 2-4 people. Must include at least one SAU student. Final demo to panel of judges.', 1
+  );
+  db.prepare('INSERT OR IGNORE INTO competitions(id,title,description,type,start_time,end_time,prize,max_participants,rules,is_active) VALUES(?,?,?,?,?,?,?,?,?,?)').run(
+    uuidv4(),'Business Case Study Challenge',
+    'Analyse a real-world business problem presented by Deloitte and McKinsey consultants. Present your solution in 15 minutes.',
+    'case_study', past1, now.toISOString(),
+    'Winner: McKinsey case prep course + ₹8,000 | Runner-up: Deloitte aptitude fast-track',
+    80, 'Teams of 2-3. Written submission due before presentation. Case revealed 48 hours prior.', 1
+  );
+
+  // STANDARD DEMO ACCOUNTS — fixed passwords so demo fill button always works
+  // These are the accounts used by the login page demo button
+  try {
+    db.prepare('INSERT OR IGNORE INTO users(id,email,password,role) VALUES(?,?,?,?)').run(uuidv4(),'student@hireloop.io',hash('password123'),'student');
+    const demoStudentUser = db.prepare('SELECT id FROM users WHERE email=?').get('student@hireloop.io');
+    if (demoStudentUser) {
+      const existing = db.prepare('SELECT id FROM student_profiles WHERE user_id=?').get(demoStudentUser.id);
+      if (!existing) db.prepare('INSERT INTO student_profiles(id,user_id,first_name,last_name,college,branch,batch,cgpa,skills) VALUES(?,?,?,?,?,?,?,?,?)').run(uuidv4(),demoStudentUser.id,'Demo','Student','South Asian University','Computer Science',2025,8.5,'["React","Node.js","Python"]');
+    }
+    db.prepare('INSERT OR IGNORE INTO users(id,email,password,role) VALUES(?,?,?,?)').run(uuidv4(),'recruiter@hireloop.io',hash('password123'),'recruiter');
+    const demoRecUser = db.prepare('SELECT id FROM users WHERE email=?').get('recruiter@hireloop.io');
+    if (demoRecUser) {
+      const existing = db.prepare('SELECT id FROM company_profiles WHERE user_id=?').get(demoRecUser.id);
+      if (!existing) db.prepare('INSERT INTO company_profiles(id,user_id,company_name,industry,is_approved) VALUES(?,?,?,?,?)').run(uuidv4(),demoRecUser.id,'Demo Company','Technology',1);
+    }
+    // Update admin password to also support password123 for demo
+    db.prepare('UPDATE users SET password=? WHERE email=?').run(hash('password123'),'admin@hireloop.io');
+  } catch (e) { console.log('Demo accounts already exist or minor error:', e.message); }
 
   // Mark the default admin as super admin
   db.prepare('UPDATE users SET is_super_admin=1 WHERE email=?').run('admin@hireloop.io');
 
-  console.log('✅ Seeded successfully!\n');
-  console.log('🔐 Demo Credentials:');
-  console.log('   Student   → demo@student.iitd.ac.in / Student@123');
-  console.log('   Recruiter → hr@google.com / Recruiter@123');
-  console.log('   Admin     → admin@hireloop.io / Admin@123\n');
+  console.log('\nSeeded successfully!\n');
+  console.log('Demo Credentials (all use password: password123):');
+  console.log('  Student   -> student@hireloop.io  / password123');
+  console.log('  Recruiter -> recruiter@hireloop.io / password123');
+  console.log('  Admin     -> admin@hireloop.io     / password123\n');
+  console.log('Also available:');
+  console.log('  Student   -> demo@student.iitd.ac.in / Student@123');
+  console.log('  Recruiter -> hr@google.com            / Recruiter@123\n');
   process.exit(0);
 }
 

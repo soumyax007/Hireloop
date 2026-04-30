@@ -120,6 +120,10 @@ router.delete('/notifications/:id', authenticate, (req, res) => {
 
 router.get('/competitions', authenticate, (req, res) => {
   const db = getDb();
+  // Ensure tables exist (safe for Railway where schema migrations may not have run)
+  try { db.exec(`CREATE TABLE IF NOT EXISTS competitions (id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT DEFAULT '', type TEXT DEFAULT 'coding', start_time TEXT, end_time TEXT, prize TEXT DEFAULT '', max_participants INTEGER DEFAULT 0, rules TEXT DEFAULT '', is_active INTEGER DEFAULT 1, created_at TEXT DEFAULT(datetime('now')))`); } catch {}
+  try { db.exec(`CREATE TABLE IF NOT EXISTS competition_registrations (id TEXT PRIMARY KEY, competition_id TEXT NOT NULL, student_id TEXT NOT NULL, registered_at TEXT DEFAULT(datetime('now')), UNIQUE(competition_id, student_id))`); } catch {}
+
   const comps = db.prepare("SELECT * FROM competitions WHERE is_active=1 ORDER BY created_at DESC").all();
   const studentId = req.user.role === 'student'
     ? db.prepare('SELECT id FROM student_profiles WHERE user_id=?').get(req.user.id)?.id

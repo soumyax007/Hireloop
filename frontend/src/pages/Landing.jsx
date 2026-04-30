@@ -71,8 +71,15 @@ export default function Landing() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
-          {['Opportunities','Recruiters','Success Stories'].map(l => (
-            <a key={l} href="#" style={{ fontSize: 14, fontWeight: 500, color: scrolled ? '#374151' : 'rgba(255,255,255,.85)', textDecoration: 'none', transition: 'color .15s' }} className="lp-nav-link">{l}</a>
+          {[
+            { label: 'Opportunities', href: '#opportunities' },
+            { label: 'Recruiters',    href: '#recruiters' },
+            { label: 'Success Stories', href: '#testimonials' },
+          ].map(l => (
+            <a key={l.label} href={l.href}
+              onClick={e => { e.preventDefault(); document.querySelector(l.href)?.scrollIntoView({ behavior: 'smooth' }); }}
+              style={{ fontSize: 14, fontWeight: 500, color: scrolled ? '#374151' : 'rgba(255,255,255,.85)', textDecoration: 'none', transition: 'color .15s', cursor: 'pointer' }}
+              className="lp-nav-link">{l.label}</a>
           ))}
         </div>
 
@@ -155,7 +162,7 @@ export default function Landing() {
       </div>
 
       {/* ── COMPANIES ────────────────────────────────────────────── */}
-      <div style={{ padding: '44px 48px', background: '#f8faff', borderBottom: '1px solid #e5e7eb' }}>
+      <div id="recruiters" style={{ padding: '44px 48px', background: '#f8faff', borderBottom: '1px solid #e5e7eb' }}>
         <div style={{ maxWidth: 1140, margin: '0 auto' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', letterSpacing: '.12em', textTransform: 'uppercase', textAlign: 'center', marginBottom: 24 }}>Trusted by global industry leaders</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }}>
@@ -167,7 +174,7 @@ export default function Landing() {
       </div>
 
       {/* ── FEATURES ─────────────────────────────────────────────── */}
-      <div style={{ padding: '80px 48px', background: '#fff' }}>
+      <div id="opportunities" style={{ padding: '80px 48px', background: '#fff' }}>
         <div style={{ maxWidth: 1140, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 52 }}>
             <h2 style={{ fontSize: 34, fontWeight: 800, color: '#111827', letterSpacing: '-1px', marginBottom: 12 }}>Why Choose HireLoop?</h2>
@@ -189,7 +196,7 @@ export default function Landing() {
       </div>
 
       {/* ── TESTIMONIALS ─────────────────────────────────────────── */}
-      <div style={{ padding: '80px 48px', background: '#f8faff' }}>
+      <div id="testimonials" style={{ padding: '80px 48px', background: '#f8faff' }}>
         <div style={{ maxWidth: 1140, margin: '0 auto' }}>
           <h2 style={{ fontSize: 32, fontWeight: 800, color: '#111827', letterSpacing: '-1px', marginBottom: 8, textAlign: 'center' }}>Student Success Stories</h2>
           <p style={{ fontSize: 15, color: '#6b7280', textAlign: 'center', marginBottom: 44 }}>Real students, real placements, real impact.</p>
