@@ -302,7 +302,7 @@ export default function Landing() {
           </div>
           <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)' }}>© {new Date().getFullYear()} HireLoop · South Asian University</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)' }}>Crafted by <span style={{ color: 'rgba(255,255,255,.6)', fontWeight: 500 }}>Soumya, Udit, Vijjval &amp; Vedant</span></div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)' }}>Crafted by <span style={{ color: 'rgba(255,255,255,.6)', fontWeight: 500 }}>Soumya, Udit, Sunil, Uddeshya &amp; Sumit</span></div>
             <div style={{ display: 'flex', gap: 20 }}>
               {['Privacy Policy','Terms of Service'].map(l => <a key={l} href="javascript:void(0)" style={{ fontSize: 12, color: 'rgba(255,255,255,.3)', textDecoration: 'none' }}>{l}</a>)}
             </div>

@@ -22,7 +22,9 @@ async function seed() {
     { email: 'admin@sau.int', name: 'Placement Cell' },
     { email: 'soumya@sau.ac.in', name: 'Soumyadip Debnath' },
     { email: 'udit@sau.ac.in', name: 'Udit Sharma' },
-    { email: 'vedant@sau.ac.in', name: 'Vedant Gupta' },
+    { email: 'sunil@sau.ac.in', name: 'Sunil' },
+    { email: 'uddeshya@sau.ac.in', name: 'Uddeshya' },
+    { email: 'sumit@sau.ac.in', name: 'Sumit' },
   ];
   for (const a of admins) {
     const uid = uuidv4(), pid = uuidv4();

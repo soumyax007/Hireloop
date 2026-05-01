@@ -69,7 +69,7 @@ export default function AppShell() {
             © {new Date().getFullYear()} HireLoop · All rights reserved
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
-            Crafted with ♥ by <span style={{ color: 'var(--text-2)', fontWeight: 500 }}>Soumya, Udit, Vijjval & Vedant</span>
+            Crafted with ♥ by <span style={{ color: 'var(--text-2)', fontWeight: 500 }}>Soumya, Udit, Sunil, Uddeshya & Sumit</span>
           </div>
         </footer>
       </div>
