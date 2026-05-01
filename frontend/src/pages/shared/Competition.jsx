@@ -55,7 +55,14 @@ export default function Competition() {
     load();
   };
 
+  const approveComp = async (id) => {
+    await api.patch(`/competitions/${id}/approve`);
+    toast.success('Approved!');
+    load();
+  };
+
   const getStatus = (c) => {
+    if (c.status === 'pending') return { label: 'Pending Approval', color: 'var(--yellow-text)', bg: 'var(--yellow-bg)' };
     const now = new Date();
     if (c.start_time && new Date(c.start_time) > now) return { label: 'Upcoming', color: 'var(--accent)', bg: 'var(--accent-bg)' };
     if (c.end_time && new Date(c.end_time) < now) return { label: 'Ended', color: 'var(--text-2)', bg: 'var(--surface-2)' };
@@ -153,7 +160,12 @@ export default function Competition() {
                     </span>
                   )}
                   {['admin', 'recruiter'].includes(user?.role) && (
-                    <button className="btn btn-danger btn-sm" style={{ marginLeft: 'auto' }} onClick={() => deleteComp(c.id)}>Delete</button>
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                      {user?.role === 'admin' && c.status === 'pending' && (
+                        <button className="btn btn-secondary btn-sm" onClick={() => approveComp(c.id)}>Approve</button>
+                      )}
+                      <button className="btn btn-danger btn-sm" onClick={() => deleteComp(c.id)}>Delete</button>
+                    </div>
                   )}
                 </div>
               </div>

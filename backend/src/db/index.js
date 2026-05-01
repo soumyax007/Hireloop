@@ -237,6 +237,8 @@ function applySchema() {
   const safeAlter = (sql) => { try { db.exec(sql); } catch {} };
   safeAlter('ALTER TABLE users ADD COLUMN is_super_admin INTEGER DEFAULT 0');
   safeAlter('ALTER TABLE notifications ADD COLUMN metadata TEXT DEFAULT "{}"');
+  safeAlter('ALTER TABLE competitions ADD COLUMN status TEXT DEFAULT "approved"');
+  safeAlter('ALTER TABLE competitions ADD COLUMN created_by TEXT');
 }
 
 module.exports = { getDb };

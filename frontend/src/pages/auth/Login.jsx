@@ -21,7 +21,7 @@ const ROLES = [
   { key: 'admin',     label: 'Admin',     icon: ShieldCheck,    color: '#1e3a5f' },
 ];
 
-const SAU_DOMAINS = ['sau.ac.in', 'sau.int', 'sa.ac.in'];
+const SAU_DOMAINS = ['sau.ac.in', 'sau.int', 'sa.ac.in', 'gmail.com'];
 const isSAUEmail = email => {
   const domain = email.split('@')[1]?.toLowerCase();
   return SAU_DOMAINS.includes(domain);
@@ -30,7 +30,7 @@ const isSAUEmail = email => {
 const DEMO = {
   student:   { email: 'student@sau.int',      password: 'Student@123' },
   recruiter: { email: 'recruiter@sau.ac.in',   password: 'Recruiter@123' },
-  admin:     { email: 'soumya@sau.ac.in',      password: 'Admin@SAU#2025' },
+  admin:     { email: 'admin@sau.int',      password: 'Admin@SAU#2025' },
 };
 
 const FEATURES = [
@@ -79,7 +79,7 @@ export default function Login() {
     e.preventDefault();
     if (!form.email || !form.password) { setError('Please fill in all fields'); return; }
     if (!isSAUEmail(form.email)) {
-      setError('Only South Asian University email addresses are allowed (@sau.ac.in or @sau.int).');
+      setError('Only SAU and Gmail email addresses are allowed.');
       return;
     }
     setLoading(true); setError('');

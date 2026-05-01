@@ -4,6 +4,7 @@ let _client = null;
 
 function getClient() {
   if (_client) return _client;
+  if (!process.env.NVIDIA_API_KEY) return null;
   _client = new OpenAI({
     apiKey: process.env.NVIDIA_API_KEY,
     baseURL: process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1',
@@ -14,7 +15,9 @@ function getClient() {
 const MODEL = () => process.env.NVIDIA_MODEL || 'meta/llama-3.1-70b-instruct';
 
 async function llm(prompt, { maxTokens = 1200, temperature = 0.4 } = {}) {
-  const completion = await getClient().chat.completions.create({
+  const client = getClient();
+  if (!client) throw new Error("AI not configured (Demo Mode)");
+  const completion = await client.chat.completions.create({
     model: MODEL(),
     messages: [{ role: 'user', content: prompt }],
     max_tokens: maxTokens,
