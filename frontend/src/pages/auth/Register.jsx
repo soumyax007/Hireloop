@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import api from '../../utils/api';
 import toast from 'react-hot-toast';
 
 const BRANCHES = ['Computer Science','Electronics & Communication','Mechanical Engineering','Civil Engineering','Electrical Engineering','Chemical Engineering','Mathematics','Physics','Biotechnology'];
@@ -48,13 +49,12 @@ export default function Register() {
     if (!form.password || form.password.length < 6) { setError('Password must be at least 6 characters'); return; }
     setError(''); setValidatingEmail(true);
     try {
-      const res = await fetch((import.meta.env.VITE_API_URL || '/api') + '/auth/validate-email', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: form.email })
-      });
-      const data = await res.json();
+      const data = await api.post('/auth/validate-email', { email: form.email });
       if (!data.valid) { setError(data.error || 'Please use a real email address'); return; }
-    } catch {}
+    } catch (e) {
+      // dns validation should only soft-fail if network errors occur
+      console.warn('DNS validation error', e);
+    }
     finally { setValidatingEmail(false); }
     setStep(3);
   };

@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({ 
-  baseURL: import.meta.env.VITE_API_URL || '/api', 
-  timeout: 45000 
+  baseURL: (import.meta.env.VITE_API_URL || '/api').replace(/\/+$/, ''), 
+  timeout: 60000 
 });
 api.interceptors.request.use(cfg => {
   const t = localStorage.getItem('hl_token');

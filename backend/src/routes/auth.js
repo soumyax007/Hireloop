@@ -7,7 +7,7 @@ const { OAuth2Client } = require('google-auth-library');
 const { getDb } = require('../db');
 const { authenticate, requireSuperAdmin } = require('../middleware/auth');
 
-const googleClient = process.env.GOOGLE_CLIENT_ID ? new OAuth2Client(process.env.GOOGLE_CLIENT_ID) : null;
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const sign = id => jwt.sign({ userId: id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
 
@@ -49,19 +49,12 @@ router.post('/register', async (req, res) => {
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Invalid email format' });
 
-    // DNS MX validation — soft fail: log but don't block if DNS lookup fails on Railway
     try {
       const domain = email.split('@')[1];
       const records = await dns.resolveMx(domain);
-      if (!records || records.length === 0) return res.status(400).json({ error: `The domain "${domain}" does not appear to be a valid email domain` });
-    } catch (dnsErr) {
-      // Railway or other cloud environments may have DNS restrictions.
-      // Only block if the error is definitely "domain not found" (ENOTFOUND), not a timeout or permission issue.
-      if (dnsErr.code === 'ENOTFOUND' || dnsErr.code === 'ENODATA') {
-        return res.status(400).json({ error: `Cannot verify email domain. Please use a real email address.` });
-      }
-      // For ETIMEOUT, ECONNREFUSED, etc. — let registration proceed
-      console.warn(`DNS lookup soft-failed for ${email}: ${dnsErr.code} — allowing registration`);
+      if (!records || records.length === 0) return res.status(400).json({ error: `The domain "${domain}" is not a valid email domain` });
+    } catch {
+      return res.status(400).json({ error: `Cannot verify email domain. Please use a real email address.` });
     }
 
     const db = getDb();
@@ -95,42 +88,66 @@ router.post('/login', async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Login failed' }); }
 });
 
-// POST /auth/google — sign in or register via Google OAuth token
+// POST /auth/google — Google OAuth sign-in / sign-up
 router.post('/google', async (req, res) => {
   try {
-    if (!googleClient) return res.status(501).json({ error: 'Google OAuth is not configured on this server. Add GOOGLE_CLIENT_ID to Railway environment variables.' });
-    const { token, role = 'student' } = req.body;
-    if (!token) return res.status(400).json({ error: 'Google token required' });
-    const ticket = await googleClient.verifyIdToken({ idToken: token, audience: process.env.GOOGLE_CLIENT_ID });
-    const payload = ticket.getPayload();
-    const email = payload.email?.toLowerCase().trim();
-    const name = payload.name || '';
-    const picture = payload.picture || '';
-    if (!email) return res.status(400).json({ error: 'Could not get email from Google account' });
+    const { token, role } = req.body;
+
+    if (!token) return res.status(400).json({ error: 'Google token is required' });
+
+    // 1. Verify the token with Google
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: token,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    } catch {
+      return res.status(401).json({ error: 'Invalid Google token' });
+    }
+
+    const email = payload.email.toLowerCase();
     const db = getDb();
-    let user = db.prepare('SELECT * FROM users WHERE email=?').get(email);
+
+    // 2. Check if user already exists
+    let user = db.prepare('SELECT * FROM users WHERE email=? AND is_active=1').get(email);
+
+    if (user && user.role !== 'student') {
+      return res.status(403).json({ error: 'Google sign-in is restricted to student accounts only' });
+    }
+
     if (!user) {
-      const uid = uuidv4(), pid = uuidv4();
-      const allowedRole = ['student','recruiter','admin'].includes(role) ? role : 'student';
-      db.prepare('INSERT INTO users(id,email,password,role) VALUES(?,?,?,?)').run(uid, email, bcrypt.hashSync(uuidv4(), 10), allowedRole);
-      const firstName = name.split(' ')[0] || '';
-      const lastName = name.split(' ').slice(1).join(' ') || '';
-      if (allowedRole === 'student') {
-        db.prepare('INSERT INTO student_profiles(id,user_id,first_name,last_name,college,branch,batch,cgpa,skills,avatar_url) VALUES(?,?,?,?,?,?,?,?,?,?)').run(pid, uid, firstName, lastName, 'South Asian University', 'Computer Science', 2025, 0, '[]', picture);
-      } else if (allowedRole === 'recruiter') {
-        db.prepare('INSERT INTO company_profiles(id,user_id,company_name,industry) VALUES(?,?,?,?)').run(pid, uid, '', 'Technology');
-      } else {
-        db.prepare('INSERT INTO admin_profiles(id,user_id,name,institution) VALUES(?,?,?,?)').run(pid, uid, name, 'South Asian University');
+      // 3. New user — enforce student role
+      if (role !== 'student') {
+        return res.status(403).json({ error: 'Google sign-up is restricted to students only' });
       }
+
+      const uid = uuidv4(), pid = uuidv4();
+      // Random unguessable password since they authenticate via Google
+      const randomPassword = bcrypt.hashSync(uuidv4(), 10);
+
+      db.prepare('INSERT INTO users(id,email,password,role) VALUES(?,?,?,?)').run(uid, email, randomPassword, 'student');
+
+      db.prepare('INSERT INTO student_profiles(id,user_id,first_name,last_name,college,branch,batch,cgpa,skills) VALUES(?,?,?,?,?,?,?,?,?)')
+        .run(pid, uid, payload.given_name || '', payload.family_name || '', '', '', 2025, 0, '[]');
+
       user = db.prepare('SELECT * FROM users WHERE id=?').get(uid);
     }
-    if (!user.is_active) return res.status(401).json({ error: 'Account is inactive' });
+
+    // 4. Return JWT + profile (same shape as /login)
     const u = { id: user.id, email: user.email, role: user.role, is_super_admin: user.is_super_admin || 0 };
     res.json({ token: sign(user.id), user: u, profile: getProfile(db, user.id, user.role) });
-  } catch (e) { console.error('Google auth error:', e.message); res.status(401).json({ error: 'Invalid Google token. Please try again.' }); }
+
+  } catch (e) {
+    console.error('Google Auth Error:', e);
+    res.status(500).json({ error: 'Google authentication failed' });
+  }
 });
 
-router.get('/me', authenticate, (req, res) => {  const db = getDb();
+// GET /auth/me
+router.get('/me', authenticate, (req, res) => {
+  const db = getDb();
   const u = { id: req.user.id, email: req.user.email, role: req.user.role, is_super_admin: req.user.is_super_admin || 0 };
   res.json({ user: u, profile: getProfile(db, req.user.id, req.user.role) });
 });
@@ -172,8 +189,6 @@ router.put('/change-password', authenticate, async (req, res) => {
 // DELETE /auth/account — any user can delete their own account EXCEPT the super admin
 router.delete('/account', authenticate, (req, res) => {
   try {
-    const PROTECTED_DEMOS = ['student@sau.int', 'recruiter@sau.ac.in', 'soumya@sau.ac.in', 'udit@sau.ac.in', 'sunil@sau.ac.in', 'uddeshya@sau.ac.in', 'sumit@sau.ac.in', 'admin@sau.int'];
-    if (PROTECTED_DEMOS.includes(req.user.email)) return res.status(403).json({ error: 'Demo accounts are protected and cannot be deleted.' });
     if (req.user.is_super_admin) return res.status(403).json({ error: 'The default admin account cannot be deleted' });
     const db = getDb();
     db.prepare('DELETE FROM users WHERE id=?').run(req.user.id);
@@ -191,44 +206,6 @@ router.delete('/users/:id', authenticate, requireSuperAdmin, (req, res) => {
     db.prepare('DELETE FROM users WHERE id=?').run(req.params.id);
     res.json({ success: true });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Deletion failed' }); }
-});
-
-// POST /auth/forgot-password — generates a reset token (stored in DB, returned in response for demo)
-router.post('/forgot-password', async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email required' });
-    const db = getDb();
-    const user = db.prepare('SELECT id,email FROM users WHERE email=? AND is_active=1').get(email.toLowerCase().trim());
-    // Always return success to prevent email enumeration
-    if (!user) return res.json({ success: true, message: 'If that email exists, a reset link has been sent.' });
-    // Generate a simple time-limited token
-    const resetToken = require('crypto').randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
-    // Store token in users table (safe migration — column added if not exists)
-    try { db.exec('ALTER TABLE users ADD COLUMN reset_token TEXT'); } catch {}
-    try { db.exec('ALTER TABLE users ADD COLUMN reset_expires TEXT'); } catch {}
-    db.prepare('UPDATE users SET reset_token=?, reset_expires=? WHERE id=?').run(resetToken, expiresAt, user.id);
-    // In production: send email. For now return token so frontend can use it directly.
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
-    console.log(`[RESET] ${user.email} → ${resetUrl}`);
-    res.json({ success: true, message: 'If that email exists, a reset link has been sent.', resetUrl }); // remove resetUrl in prod
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to process request' }); }
-});
-
-// POST /auth/reset-password — validates token and sets new password
-router.post('/reset-password', async (req, res) => {
-  try {
-    const { email, token, newPassword } = req.body;
-    if (!email || !token || !newPassword) return res.status(400).json({ error: 'All fields required' });
-    if (newPassword.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    const db = getDb();
-    const user = db.prepare('SELECT * FROM users WHERE email=? AND reset_token=?').get(email.toLowerCase().trim(), token);
-    if (!user) return res.status(400).json({ error: 'Invalid or expired reset link' });
-    if (new Date(user.reset_expires) < new Date()) return res.status(400).json({ error: 'Reset link has expired. Please request a new one.' });
-    db.prepare('UPDATE users SET password=?, reset_token=NULL, reset_expires=NULL WHERE id=?').run(bcrypt.hashSync(newPassword, 10), user.id);
-    res.json({ success: true });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Failed to reset password' }); }
 });
 
 module.exports = router;

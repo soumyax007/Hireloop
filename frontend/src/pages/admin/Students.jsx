@@ -63,10 +63,29 @@ export default function AdminStudents() {
                     </td>
                     <td style={{ fontSize: 13 }}>{s.app_count || 0} apps</td>
                     <td>
-                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                        {s.offers > 0 && <span className="badge badge-green">Offer ✓</span>}
-                        {s.is_premium ? <span className="badge badge-premium">⭐</span> : null}
-                        {s.offers === 0 && !s.is_premium && <span className="badge badge-gray">Active</span>}
+                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          {s.offers > 0 && <span className="badge badge-green">Offer ✓</span>}
+                          {s.is_premium ? <span className="badge badge-premium">⭐</span> : null}
+                          {s.offers === 0 && !s.is_premium && <span className="badge badge-gray">Active</span>}
+                        </div>
+                        <button 
+                          className="btn btn-ghost btn-sm" 
+                          style={{ color: 'var(--red-text)', padding: 4 }}
+                          title="Delete Account"
+                          onClick={async () => {
+                            if (!window.confirm(`Are you sure you want to delete ${s.first_name}'s account? This action cannot be undone.`)) return;
+                            try {
+                              await api.delete(`/auth/users/${s.user_id}`);
+                              setStudents(prev => prev.filter(st => st.id !== s.id));
+                              toast.success('Account deleted successfully');
+                            } catch (e) {
+                              toast.error(e.error || 'Failed to delete account');
+                            }
+                          }}
+                        >
+                          ✕
+                        </button>
                       </div>
                     </td>
                   </tr>

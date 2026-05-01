@@ -19,48 +19,49 @@ async function seed() {
   // ADMIN
   const adminPIDs = [];
   const admins = [
-    { email: 'admin@sau.int', name: 'Placement Cell' },
-    { email: 'soumya@sau.ac.in', name: 'Soumyadip Debnath' },
-    { email: 'udit@sau.ac.in', name: 'Udit Sharma' },
-    { email: 'sunil@sau.ac.in', name: 'Sunil' },
-    { email: 'uddeshya@sau.ac.in', name: 'Uddeshya' },
-    { email: 'sumit@sau.ac.in', name: 'Sumit' },
+    { email: 'admin@hireloop.io', name: 'Placement Cell', pwd: 'password123' },
+    { email: 'soumya@sau.ac.in', name: 'Soumyadip Debnath', pwd: 'password123' },
+    { email: 'udit@sau.ac.in', name: 'Udit Sharma', pwd: 'password123' },
+    { email: 'sunil@sau.ac.in', name: 'Sunil', pwd: 'password123' },
+    { email: 'uddeshya@sau.ac.in', name: 'Uddeshya', pwd: 'password123' },
+    { email: 'sumit@sau.ac.in', name: 'Sumit', pwd: 'password123' },
   ];
   for (const a of admins) {
     const uid = uuidv4(), pid = uuidv4();
-    db.prepare('INSERT INTO users(id,email,password,role,is_super_admin) VALUES(?,?,?,?,?)').run(uid,a.email,hash('Admin@SAU#2025'),'admin', 1);
+    db.prepare('INSERT INTO users(id,email,password,role,is_super_admin) VALUES(?,?,?,?,?)').run(uid,a.email,hash(a.pwd),'admin', 1);
     db.prepare('INSERT INTO admin_profiles(id,user_id,name,institution) VALUES(?,?,?,?)').run(pid,uid,a.name,'South Asian University');
     adminPIDs.push(pid);
   }
 
   // STUDENTS
   const studentsData = [
-    { email:'arjun@student.sau.int', fn:'Arjun', ln:'Mehta', branch:'Computer Science', cgpa:8.7, skills:['React','Node.js','Python','Machine Learning','Docker'], batch:2025, premium:1 },
-    { email:'sneha@student.sau.int', fn:'Sneha', ln:'Patel', branch:'Electronics & Communication', cgpa:8.2, skills:['VLSI','Embedded C','MATLAB','PCB Design'], batch:2025, premium:0 },
-    { email:'rahul@student.sau.int', fn:'Rahul', ln:'Kumar', branch:'Mechanical Engineering', cgpa:7.9, skills:['CAD','SolidWorks','Python','ANSYS'], batch:2025, premium:0 },
-    { email:'priya@student.sau.int', fn:'Priya', ln:'Singh', branch:'Computer Science', cgpa:9.1, skills:['Java','Spring Boot','AWS','Kubernetes','SQL'], batch:2025, premium:1 },
-    { email:'student@sau.int', fn:'Demo', ln:'Student', branch:'Computer Science', cgpa:8.5, skills:['React','TypeScript','Python','Node.js'], batch:2025, premium:0 },
+    { email:'arjun@student.sau.int', fn:'Arjun', ln:'Mehta', branch:'Computer Science', cgpa:8.7, skills:['React','Node.js','Python','Machine Learning','Docker'], batch:2025, premium:1, pwd: 'password123' },
+    { email:'sneha@student.sau.int', fn:'Sneha', ln:'Patel', branch:'Electronics & Communication', cgpa:8.2, skills:['VLSI','Embedded C','MATLAB','PCB Design'], batch:2025, premium:0, pwd: 'password123' },
+    { email:'rahul@student.sau.int', fn:'Rahul', ln:'Kumar', branch:'Mechanical Engineering', cgpa:7.9, skills:['CAD','SolidWorks','Python','ANSYS'], batch:2025, premium:0, pwd: 'password123' },
+    { email:'priya@student.sau.int', fn:'Priya', ln:'Singh', branch:'Computer Science', cgpa:9.1, skills:['Java','Spring Boot','AWS','Kubernetes','SQL'], batch:2025, premium:1, pwd: 'password123' },
+    { email:'student@hireloop.io', fn:'Demo', ln:'Student', branch:'Computer Science', cgpa:8.5, skills:['React','TypeScript','Python','Node.js'], batch:2025, premium:0, pwd: 'password123' },
+    { email:'demo@student.iitd.ac.in', fn:'Demo', ln:'IITD', branch:'Computer Science', cgpa:8.5, skills:['React','TypeScript','Python','Node.js'], batch:2025, premium:0, pwd: 'Student@123' },
   ];
   const studentPIDs = [];
   for (const s of studentsData) {
     const uid = uuidv4(), pid = uuidv4();
-    db.prepare('INSERT INTO users(id,email,password,role) VALUES(?,?,?,?)').run(uid,s.email,hash('Student@123'),'student');
+    db.prepare('INSERT INTO users(id,email,password,role) VALUES(?,?,?,?)').run(uid,s.email,hash(s.pwd),'student');
     db.prepare('INSERT INTO student_profiles(id,user_id,first_name,last_name,phone,college,branch,batch,cgpa,skills,bio,is_premium) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(pid,uid,s.fn,s.ln,'9876543210','IIT Delhi',s.branch,s.batch,s.cgpa,JSON.stringify(s.skills),`${s.branch} student passionate about building scalable systems.`,s.premium);
     studentPIDs.push(pid);
   }
 
   // COMPANIES
   const companiesData = [
-    { email:'hr@google.com', name:'Google India', industry:'Technology', desc:'Organise the world\'s information.', site:'https://google.com', approved:1 },
-    { email:'hr@microsoft.com', name:'Microsoft India', industry:'Technology', desc:'Empower every person and organisation.', site:'https://microsoft.com', approved:1 },
-    { email:'hr@goldman.com', name:'Goldman Sachs', industry:'Finance & Banking', desc:'Global investment banking firm.', site:'https://goldmansachs.com', approved:1 },
-    { email:'hr@flipkart.com', name:'Flipkart', industry:'E-Commerce', desc:'India\'s leading e-commerce company.', site:'https://flipkart.com', approved:1 },
-    { email:'recruiter@sau.ac.in', name:'Demo Corp SAU', industry:'AI Startup', desc:'Building next-gen AI products.', site:'https://technova.io', approved:1 },
+    { email:'hr@google.com', name:'Google India', industry:'Technology', desc:'Organise the world\'s information.', site:'https://google.com', approved:1, pwd: 'Recruiter@123' },
+    { email:'hr@microsoft.com', name:'Microsoft India', industry:'Technology', desc:'Empower every person and organisation.', site:'https://microsoft.com', approved:1, pwd: 'password123' },
+    { email:'hr@goldman.com', name:'Goldman Sachs', industry:'Finance & Banking', desc:'Global investment banking firm.', site:'https://goldmansachs.com', approved:1, pwd: 'password123' },
+    { email:'hr@flipkart.com', name:'Flipkart', industry:'E-Commerce', desc:'India\'s leading e-commerce company.', site:'https://flipkart.com', approved:1, pwd: 'password123' },
+    { email:'recruiter@hireloop.io', name:'Demo Corp SAU', industry:'AI Startup', desc:'Building next-gen AI products.', site:'https://technova.io', approved:1, pwd: 'password123' },
   ];
   const companyPIDs = [];
   for (const c of companiesData) {
     const uid = uuidv4(), pid = uuidv4();
-    db.prepare('INSERT INTO users(id,email,password,role) VALUES(?,?,?,?)').run(uid,c.email,hash('Recruiter@123'),'recruiter');
+    db.prepare('INSERT INTO users(id,email,password,role) VALUES(?,?,?,?)').run(uid,c.email,hash(c.pwd),'recruiter');
     db.prepare('INSERT INTO company_profiles(id,user_id,company_name,industry,description,website,is_approved) VALUES(?,?,?,?,?,?,?)').run(pid,uid,c.name,c.industry,c.desc,c.site,c.approved);
     companyPIDs.push(pid);
   }
@@ -142,10 +143,10 @@ async function seed() {
 
   console.log('\nSeeded successfully!\n');
   console.log('Demo Credentials:');
-  console.log('  Student   -> student@sau.int     / Student@123');
-  console.log('  Recruiter -> recruiter@sau.ac.in / Recruiter@123');
-  console.log('  Admin     -> admin@sau.int       / Admin@SAU#2025');
-  console.log('  Admin 2   -> soumya@sau.ac.in    / Admin@SAU#2025');
+  console.log('  Student   -> student@hireloop.io   / password123');
+  console.log('  Recruiter -> recruiter@hireloop.io / password123');
+  console.log('  Admin     -> admin@hireloop.io     / password123');
+  console.log('  Admin 2   -> soumya@sau.ac.in      / password123');
   process.exit(0);
 }
 

@@ -61,9 +61,26 @@ export default function AdminCompanies() {
                     </span>
                   </td>
                   <td>
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                       {!c.is_approved && <button className="btn btn-success btn-sm" onClick={() => approve(c.id, true)}>✓ Approve</button>}
                       {c.is_approved && <button className="btn btn-danger btn-sm" onClick={() => approve(c.id, false)}>Revoke</button>}
+                      <button 
+                        className="btn btn-ghost btn-sm" 
+                        style={{ color: 'var(--red-text)', padding: 4 }}
+                        title="Delete Account"
+                        onClick={async () => {
+                          if (!window.confirm(`Are you sure you want to delete ${c.company_name}'s account? This action cannot be undone.`)) return;
+                          try {
+                            await api.delete(`/auth/users/${c.user_id}`);
+                            setCompanies(prev => prev.filter(co => co.id !== c.id));
+                            toast.success('Account deleted successfully');
+                          } catch (e) {
+                            toast.error(e.error || 'Failed to delete account');
+                          }
+                        }}
+                      >
+                        ✕
+                      </button>
                     </div>
                   </td>
                 </tr>

@@ -24,9 +24,9 @@ const ROLES = [
 
 
 const DEMO = {
-  student:   { email: 'student@sau.int',      password: 'Student@123' },
-  recruiter: { email: 'recruiter@sau.ac.in',   password: 'Recruiter@123' },
-  admin:     { email: 'admin@sau.int',      password: 'Admin@SAU#2025' },
+  student:   { email: 'student@hireloop.io',      password: 'password123' },
+  recruiter: { email: 'recruiter@hireloop.io',    password: 'password123' },
+  admin:     { email: 'admin@hireloop.io',        password: 'password123' },
 };
 
 const FEATURES = [
