@@ -107,33 +107,33 @@ async function seed() {
   const future3 = new Date(now.getTime() + 21*24*60*60*1000).toISOString();
   const past1   = new Date(now.getTime() - 5*24*60*60*1000).toISOString();
 
-  db.prepare('INSERT OR IGNORE INTO competitions(id,title,description,type,start_time,end_time,prize,max_participants,rules,is_active) VALUES(?,?,?,?,?,?,?,?,?,?)').run(
+  db.prepare('INSERT OR IGNORE INTO competitions(id,title,description,type,start_time,end_time,prize,max_participants,rules,is_active,status,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(
     uuidv4(),'SAU Coding Championship 2025',
     'Test your data structures and algorithm skills against the best minds at SAU. Problems range from beginner to expert level.',
     'coding', future1, future2,
     'Winner: ₹25,000 cash + Google interview fast-track | Runner-up: ₹10,000 + certificate',
-    200, 'Individual participation only. No plagiarism. 3 hours per round. Online judge final verdict is binding.', 1
+    200, 'Individual participation only. No plagiarism. 3 hours per round. Online judge final verdict is binding.', 1, 'approved', adminPIDs[0]
   );
-  db.prepare('INSERT OR IGNORE INTO competitions(id,title,description,type,start_time,end_time,prize,max_participants,rules,is_active) VALUES(?,?,?,?,?,?,?,?,?,?)').run(
+  db.prepare('INSERT OR IGNORE INTO competitions(id,title,description,type,start_time,end_time,prize,max_participants,rules,is_active,status,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(
     uuidv4(),'National Aptitude Challenge',
     'Quantitative aptitude, logical reasoning, and verbal ability — a comprehensive test designed to mirror top company placement assessments.',
     'aptitude', future2, future3,
     'Top 3: ₹5,000 each + premium placement cell recommendation letter',
-    500, 'MCQ format. 90 minutes. No negative marking. Results announced within 48 hours.', 1
+    500, 'MCQ format. 90 minutes. No negative marking. Results announced within 48 hours.', 1, 'approved', adminPIDs[0]
   );
-  db.prepare('INSERT OR IGNORE INTO competitions(id,title,description,type,start_time,end_time,prize,max_participants,rules,is_active) VALUES(?,?,?,?,?,?,?,?,?,?)').run(
+  db.prepare('INSERT OR IGNORE INTO competitions(id,title,description,type,start_time,end_time,prize,max_participants,rules,is_active,status,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(
     uuidv4(),'HireLoop Hackathon — Build for Bharat',
     '48-hour hackathon to build solutions addressing real problems in education, healthcare, or financial inclusion. Mentors from Google and Microsoft.',
     'hackathon', future1, future3,
     'Winner: ₹50,000 + internship offer from sponsoring company | Best UX: ₹15,000',
-    150, 'Teams of 2-4 people. Must include at least one SAU student. Final demo to panel of judges.', 1
+    150, 'Teams of 2-4 people. Must include at least one SAU student. Final demo to panel of judges.', 1, 'approved', adminPIDs[0]
   );
-  db.prepare('INSERT OR IGNORE INTO competitions(id,title,description,type,start_time,end_time,prize,max_participants,rules,is_active) VALUES(?,?,?,?,?,?,?,?,?,?)').run(
+  db.prepare('INSERT OR IGNORE INTO competitions(id,title,description,type,start_time,end_time,prize,max_participants,rules,is_active,status,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(
     uuidv4(),'Business Case Study Challenge',
     'Analyse a real-world business problem presented by Deloitte and McKinsey consultants. Present your solution in 15 minutes.',
     'case_study', past1, now.toISOString(),
     'Winner: McKinsey case prep course + ₹8,000 | Runner-up: Deloitte aptitude fast-track',
-    80, 'Teams of 2-3. Written submission due before presentation. Case revealed 48 hours prior.', 1
+    80, 'Teams of 2-3. Written submission due before presentation. Case revealed 48 hours prior.', 1, 'approved', adminPIDs[0]
   );
 
   // Remove legacy DEMO account generation code
