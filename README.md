@@ -1,8 +1,8 @@
-# HireLoop — South Asian University Placement Portal 🎓
+# HireLoop — South Asian University Placement Portal 
 
 HireLoop is the official, comprehensive career placement and campus recruitment portal designed specifically for South Asian University (SAU). It bridges the gap between students, top recruiters, and the university placement cell, leveraging modern web technologies and AI to streamline the hiring process.
 
-## 🌟 Key Features
+## Key Features
 
 ### For Students
 *   **AI Resume Scoring & Feedback**: Get instant ATS-friendly analysis and actionable improvements using the NVIDIA Llama-powered AI engine.
@@ -35,7 +35,7 @@ HireLoop is the official, comprehensive career placement and campus recruitment 
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 *   Node.js (v18 or higher recommended)
@@ -96,7 +96,7 @@ npm run dev
 
 ---
 
-## 🔐 Access & Demo Credentials
+##  Access & Demo Credentials
 
 The platform is strictly locked to **South Asian University** domains (`@sau.ac.in`, `@sau.int`, `@sa.ac.in`).
 
@@ -107,7 +107,7 @@ If running locally without a full database, you can use the built-in **Demo Mode
 | **Student** | `student@sau.int` | `Student@123` |
 | **Recruiter** | `recruiter@sau.ac.in` | `Recruiter@123` |
 
-### 🛡️ Master Admins
+###  Master Admins
 The following accounts possess super-admin capabilities:
 
 | Name | Email | Password |
@@ -146,5 +146,5 @@ hireloop/
 
 ---
 
-## 👨‍💻 Credits
+##  Credits
 Crafted with ❤️ by the SAU Development Team: **Soumya, Udit, Vijjval & Vedant**.
