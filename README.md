@@ -24,7 +24,7 @@ HireLoop is the official, comprehensive career placement and campus recruitment 
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 *   **Frontend**: React.js, Vite, React Router, custom CSS for a premium UI, and Lucide React for iconography.
 *   **Backend**: Node.js, Express.js.
