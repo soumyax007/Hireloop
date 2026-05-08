@@ -120,7 +120,7 @@ The following accounts possess super-admin capabilities:
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 ```text
 hireloop/
